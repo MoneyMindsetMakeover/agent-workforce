@@ -153,11 +153,19 @@ if agent_page == "Dashboard Overview":
     st.markdown("---")
 
     # CORA Leads Preview
-    st.subheader("CORA Recent Leads")
-    if len(cora_leads) == 0:
-        st.info("No leads yet. Run CORA to generate leads.")
-    else:
-        st.dataframe(pd.DataFrame(cora_leads))
+st.subheader("CORA Recent Leads")
+if len(cora_leads) == 0:
+    st.info("No leads yet. Run CORA to generate leads.")
+else:
+    cora_df_display = pd.DataFrame(cora_leads)
+    st.dataframe(cora_df_display)
+    
+    st.download_button(
+        "Export CSV",
+        cora_df_display.to_csv(index=False),
+        f"cora_leads_{datetime.now().strftime('%Y%m%d')}.csv",
+        "text/csv"
+    )
 
 # ----------------------------------------------------------------
 #                        CORA PAGE
@@ -269,6 +277,7 @@ elif agent_page == "OPSI (Operations)":
                         st.success("Task created successfully.")
                         st.cache_data.clear()
                         st.rerun()
+
 
 
 
