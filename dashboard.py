@@ -1,8 +1,9 @@
 import streamlit as st
 from datetime import datetime
-from cora import cora_page, get_cora_status, get_cora_leads
-from mark import mark_page, get_mark_status
-from opsi import opsi_page, get_opsi_status, load_opsi_tasks
+from cora import get_cora_status, get_cora_leads
+from mark import get_mark_status
+from opsi import get_opsi_status, load_opsi_tasks
+from utils import load_cora_data, send_approved_leads_to_mark, load_opsi_data, send_opsi_task
 
 # ========================================
 # PAGE CONFIGURATION
@@ -76,7 +77,7 @@ with st.sidebar:
     st.markdown("### 🧭 Navigation")
     selected_page = st.radio(
         "Select View:",
-        ["Dashboard Overview", "CORA (Lead Generation)", "MARK (Marketing AI)", "OPSI (Operations)"],
+        ["Dashboard Overview", "Approve Leads", "Manage Tasks"],
         label_visibility="collapsed"
     )
     
@@ -100,7 +101,7 @@ with st.sidebar:
     st.markdown(f'<span class="{status_class_map.get(opsi_status, "status-offline")}">● OPSI: {opsi_status}</span>', unsafe_allow_html=True)
     
     st.markdown("---")
-    st.caption(f"v1.0 • Last updated: {datetime.now().strftime('%H:%M:%S')}")
+    st.caption(f"v2.0 • Last updated: {datetime.now().strftime('%H:%M:%S')}")
 
 # ========================================
 # MAIN CONTENT AREA
@@ -194,39 +195,265 @@ if selected_page == "Dashboard Overview":
         st.dataframe(recent_df, use_container_width=True, hide_index=True)
     else:
         st.info("No recent activity. Run CORA to generate leads.")
+
+elif selected_page == "Approve Leads":
+    # ========================================
+    # APPROVE LEADS PAGE
+    # ========================================
     
-    # Quick Actions
-    st.markdown("---")
-    st.subheader("⚡ Quick Actions")
+    st.header("📧 Approve Leads for Outreach")
+    st.write("Review and approve leads for MARK to send outreach emails")
     
-    col1, col2, col3 = st.columns(3)
+    df = load_cora_data()
+    
+    if df.empty:
+        st.info("No leads available. Run CORA to generate leads.")
+    else:
+        # Metrics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Leads", len(df))
+        
+        with col2:
+            today = datetime.now().strftime("%Y-%m-%d")
+            today_count = df["timestamp"].str.contains(today, na=False).sum() if "timestamp" in df.columns else 0
+            st.metric("Today", today_count)
+        
+        with col3:
+            cities = df["organization"].str.contains("City", case=False, na=False).sum() if "organization" in df.columns else 0
+            st.metric("Cities", cities)
+        
+        with col4:
+            churches = df["organization"].str.contains("Church", case=False, na=False).sum() if "organization" in df.columns else 0
+            st.metric("Churches", churches)
+        
+        st.markdown("---")
+        
+        # ========================================
+        # APPROVE LEADS SECTION
+        # ========================================
+        if 'Lead ID' in df.columns:
+            st.markdown("### Select Leads to Approve")
+            
+            # Select All checkbox
+            col1, col2 = st.columns([1, 5])
+            with col1:
+                select_all = st.checkbox("Select All", key="select_all_cora")
+            with col2:
+                st.markdown("*Check the box to select all leads at once*")
+            
+            st.markdown("---")
+            
+            # Display leads with checkboxes
+            selected_lead_ids = []
+            
+            # Create a container for better spacing
+            for idx, row in df.iterrows():
+                col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
+                
+                with col1:
+                    is_selected = st.checkbox(
+                        "✓",
+                        value=select_all,
+                        key=f"lead_check_{row.get('Lead ID', idx)}",
+                        label_visibility="collapsed"
+                    )
+                    if is_selected:
+                        selected_lead_ids.append(row.get('Lead ID', ''))
+                
+                with col2:
+                    st.write(f"**{row.get('Name', 'N/A')}**")
+                
+                with col3:
+                    st.write(row.get('Organization', 'N/A'))
+                
+                with col4:
+                    email = row.get('Email', 'N/A')
+                    st.write(email[:25] + '...' if len(str(email)) > 25 else email)
+                
+                with col5:
+                    st.code(row.get('Lead ID', 'N/A'), language=None)
+            
+            st.markdown("---")
+            
+            # Approval controls
+            col1, col2, col3 = st.columns([2, 2, 2])
+            
+            with col1:
+                st.metric("Selected", len(selected_lead_ids))
+            
+            with col2:
+                approve_btn = st.button(
+                    "✅ Approve Selected Leads",
+                    type="primary",
+                    use_container_width=True,
+                    disabled=len(selected_lead_ids) == 0
+                )
+            
+            with col3:
+                if st.button("🔄 Refresh Data", use_container_width=True):
+                    st.cache_data.clear()
+                    st.rerun()
+            
+            # Handle approval
+            if approve_btn:
+                if selected_lead_ids:
+                    with st.spinner("Sending to MARK..."):
+                        success, response = send_approved_leads_to_mark(selected_lead_ids)
+                        
+                        if success:
+                            st.success(f"✅ Successfully approved {len(selected_lead_ids)} lead(s)!")
+                            st.info("🤖 MARK will send outreach emails shortly.")
+                            
+                            # Show approved leads
+                            with st.expander("View Approved Leads"):
+                                for lead_id in selected_lead_ids:
+                                    st.write(f"• {lead_id}")
+                        else:
+                            st.error(f"❌ Failed to send to MARK: {response}")
+                            st.info("💡 Check that the MARK webhook is running in n8n")
+                else:
+                    st.warning("⚠️ Please select at least one lead to approve")
+        
+        st.markdown("---")
+        
+        # ========================================
+        # SEARCH AND FILTER
+        # ========================================
+        search = st.text_input("🔍 Search leads by name, email, or organization...")
+        filtered = df.copy()
+        
+        if search:
+            mask = (
+                df["name"].str.contains(search, case=False, na=False) |
+                df["email"].str.contains(search, case=False, na=False) |
+                df["organization"].str.contains(search, case=False, na=False)
+            )
+            filtered = df[mask]
+        
+        # ========================================
+        # LEADS TABLE
+        # ========================================
+        st.subheader(f"All Leads ({len(filtered)})")
+        
+        if not filtered.empty:
+            st.dataframe(filtered, use_container_width=True, hide_index=True)
+            
+            # Export button
+            csv = filtered.to_csv(index=False)
+            st.download_button(
+                "📥 Export to CSV",
+                csv,
+                f"cora_leads_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                "text/csv",
+                use_container_width=False
+            )
+        else:
+            st.info("No leads match your search criteria.")
+
+elif selected_page == "Manage Tasks":
+    # ========================================
+    # MANAGE TASKS PAGE (OPSI)
+    # ========================================
+    
+    st.header("📋 Manage Tasks")
+    st.write("Create and track compliance tasks, deadlines, and operations")
+    
+    opsi_df = load_opsi_data()
+    
+    # Determine column names (handle trailing spaces)
+    status_col = "Status " if "Status " in opsi_df.columns else "Status"
+    priority_col = "Priority " if "Priority " in opsi_df.columns else "Priority"
+    
+    # Metrics
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        if st.button("🎯 View CORA Leads", use_container_width=True):
-            st.session_state.page = "CORA (Lead Generation)"
-            st.rerun()
+        pending = len(opsi_df[opsi_df[status_col] == "New"]) if not opsi_df.empty else 0
+        st.metric("Pending", pending)
     
     with col2:
-        if st.button("📧 Check MARK Status", use_container_width=True):
-            st.session_state.page = "MARK (Marketing AI)"
-            st.rerun()
+        in_progress = len(opsi_df[opsi_df[status_col] == "In Progress"]) if not opsi_df.empty else 0
+        st.metric("In Progress", in_progress)
     
     with col3:
-        if st.button("📋 Manage OPSI Tasks", use_container_width=True):
-            st.session_state.page = "OPSI (Operations)"
-            st.rerun()
-
-elif selected_page == "CORA (Lead Generation)":
-    # Route to CORA page
-    cora_page()
-
-elif selected_page == "MARK (Marketing AI)":
-    # Route to MARK page
-    mark_page()
-
-elif selected_page == "OPSI (Operations)":
-    # Route to OPSI page
-    opsi_page()
+        high = len(opsi_df[opsi_df[priority_col] == "High"]) if not opsi_df.empty else 0
+        st.metric("High Priority", high)
+    
+    with col4:
+        st.metric("Total Tasks", len(opsi_df))
+    
+    st.markdown("---")
+    
+    # ========================================
+    # CREATE TASK
+    # ========================================
+    with st.expander("➕ Create New Task", expanded=False):
+        with st.form("task_form"):
+            
+            title = st.text_input("Task Title*")
+            
+            task_type = st.selectbox(
+                "Task Type*",
+                ["Select option", "RFP Submission", "Contract Renewal", "Audit", "Compliance Report", "Other"]
+            )
+            
+            assigned_to = st.text_input("Assigned To*", placeholder="Enter person name")
+            
+            deadline = st.date_input("Deadline Date*")
+            
+            priority = st.selectbox(
+                "Priority*",
+                ["Select option", "High", "Medium", "Low"]
+            )
+            
+            notes = st.text_area("Notes")
+            
+            submitted = st.form_submit_button("Create Task")
+            
+            if submitted:
+                errors = []
+                
+                if not title.strip():
+                    errors.append("Task title is required.")
+                if task_type == "Select option":
+                    errors.append("Task type is required.")
+                if priority == "Select option":
+                    errors.append("Priority is required.")
+                if not assigned_to.strip():
+                    errors.append("Assigned To is required.")
+                
+                if errors:
+                    for e in errors:
+                        st.error(e)
+                else:
+                    task_data = {
+                        "title": title,
+                        "taskType": task_type,
+                        "assignedTo": assigned_to,
+                        "deadline": str(deadline),
+                        "priority": priority,
+                        "notes": notes,
+                    }
+                    result = send_opsi_task(task_data)
+                    
+                    if result:
+                        st.success("✅ Task created successfully!")
+                        st.cache_data.clear()
+                        st.rerun()
+    
+    st.markdown("---")
+    
+    # ========================================
+    # ACTIVE TASKS
+    # ========================================
+    st.subheader("Active Tasks")
+    
+    if not opsi_df.empty:
+        st.dataframe(opsi_df, hide_index=True, use_container_width=True)
+    else:
+        st.info("No tasks found. Create your first task above.")
 
 # ========================================
 # FOOTER
