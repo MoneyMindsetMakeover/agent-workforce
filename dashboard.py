@@ -375,57 +375,57 @@ elif selected_agent == "OPSI (Operations)":
     with st.expander("➕ Create New Task"):
         with st.form("new_task_form"):
 
-        title = st.text_input("Task Title*")
-
-        # Dropdowns with “Select option”
-        task_type = st.selectbox(
-            "Task Type*",
-            ["Select option", "RFP Submission", "Contract Renewal", "Audit", "Compliance Report"]
-        )
-
-        assigned_to = st.text_input("Assigned To*", placeholder="Enter name")
-
-        deadline = st.date_input("Deadline Date*")
-
-        priority = st.selectbox(
-            "Priority*",
-            ["Select option", "High", "Medium", "Low"]
-        )
-
-        notes = st.text_area("Notes")
-
-        submitted = st.form_submit_button("Create Task")
-
-        if submitted:
-            errors = []
-
-            # Validation
-            if not title.strip():
-                errors.append("Task Title is required.")
-            if task_type == "Select option":
-                errors.append("Task Type is required.")
-            if priority == "Select option":
-                errors.append("Priority is required.")
-            if not assigned_to.strip():
-                errors.append("Assigned To is required.")
-
-            if errors:
-                for e in errors:
-                    st.error(e)
-            else:
-                task_data = {
-                    "title": title,
-                    "taskType": task_type,
-                    "assignedTo": assigned_to,
-                    "deadline": str(deadline),
-                    "priority": priority,
-                    "notes": notes
-                }
-                result = create_opsi_task(task_data)
-                if result:
-                    st.success("✅ Task created successfully.")
-                    st.cache_data.clear()
-                    st.rerun()
+            title = st.text_input("Task Title*")
+    
+            # Dropdowns with “Select option”
+            task_type = st.selectbox(
+                "Task Type*",
+                ["Select option", "RFP Submission", "Contract Renewal", "Audit", "Compliance Report"]
+            )
+    
+            assigned_to = st.text_input("Assigned To*", placeholder="Enter name")
+    
+            deadline = st.date_input("Deadline Date*")
+    
+            priority = st.selectbox(
+                "Priority*",
+                ["Select option", "High", "Medium", "Low"]
+            )
+    
+            notes = st.text_area("Notes")
+    
+            submitted = st.form_submit_button("Create Task")
+    
+            if submitted:
+                errors = []
+    
+                # Validation
+                if not title.strip():
+                    errors.append("Task Title is required.")
+                if task_type == "Select option":
+                    errors.append("Task Type is required.")
+                if priority == "Select option":
+                    errors.append("Priority is required.")
+                if not assigned_to.strip():
+                    errors.append("Assigned To is required.")
+    
+                if errors:
+                    for e in errors:
+                        st.error(e)
+                else:
+                    task_data = {
+                        "title": title,
+                        "taskType": task_type,
+                        "assignedTo": assigned_to,
+                        "deadline": str(deadline),
+                        "priority": priority,
+                        "notes": notes
+                    }
+                    result = create_opsi_task(task_data)
+                    if result:
+                        st.success("✅ Task created successfully.")
+                        st.cache_data.clear()
+                        st.rerun()
 
                 else:
                     st.error("Task title is required.")
@@ -451,6 +451,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
