@@ -68,8 +68,8 @@ def connect_to_sheets():
     try:
         credentials_dict = dict(st.secrets["google_credentials"])
         scope = [
-            'https://spreadsheets.google.com/feeds',
-            'https://www.googleapis.com/auth/drive'
+            "https://spreadsheets.google.com/feeds",
+            "https://www.googleapis.com/auth/drive",
         ]
         credentials = Credentials.from_service_account_info(credentials_dict, scopes=scope)
         client = gspread.authorize(credentials)
@@ -78,8 +78,9 @@ def connect_to_sheets():
         st.error(f"Connection error: {e}")
         return None
 
+
 # ----------------------------------------------------
-# LOAD CORA SHEET
+# LOAD CORA DATA
 # ----------------------------------------------------
 @st.cache_data(ttl=300)
 def load_cora_data():
@@ -97,8 +98,9 @@ def load_cora_data():
         st.error(f"Error loading CORA data: {e}")
         return pd.DataFrame()
 
+
 # ----------------------------------------------------
-# LOAD OPSI SHEET
+# LOAD OPSI DATA
 # ----------------------------------------------------
 @st.cache_data(ttl=60)
 def load_opsi_data():
@@ -114,10 +116,9 @@ def load_opsi_data():
         st.error(f"Error loading OPSI data: {e}")
         return pd.DataFrame()
 
-# (MARK will get its own loader later if needed)
 
 # ----------------------------------------------------
-# OPSI TASK CREATION (n8n webhook)
+# OPSI TASK CREATION VIA N8N
 # ----------------------------------------------------
 def create_opsi_task(task_data):
     webhook_url = "https://hackett2k.app.n8n.cloud/webhook/opsi-create-task"
@@ -125,14 +126,16 @@ def create_opsi_task(task_data):
         response = requests.post(webhook_url, json=task_data)
         return response.json()
     except Exception as e:
-        st.error(f"Error creating OPSI task: {e}")
+        st.error(f"Error creating task: {e}")
         return None
 
+
 # ----------------------------------------------------
-# MAIN HEADER
+# HEADER
 # ----------------------------------------------------
 st.markdown('<p class="main-header">ApexxAdams Command Center</p>', unsafe_allow_html=True)
 st.write("Multi-Agent System Dashboard - CORA | MARK | OPSI")
+
 
 # ----------------------------------------------------
 # SIDEBAR
@@ -156,20 +159,15 @@ selected_agent = st.sidebar.selectbox(
     ["Dashboard Overview", "CORA (Lead Generation)", "MARK (Marketing AI)", "OPSI (Operations)"]
 )
 
-# ----------------------------------------------------
-# QUICK ACTIONS
-# ----------------------------------------------------
 st.sidebar.markdown("---")
-st.sidebar.subheader("Quick Actions")
 
+st.sidebar.subheader("Quick Actions")
 if st.sidebar.button("Run CORA Now"):
     st.sidebar.success("CORA workflow triggered!")
-
 if st.sidebar.button("Ask MARK"):
     st.sidebar.info("MARK chat opening...")
-
 if st.sidebar.button("View OPSI Tasks"):
-    st.sidebar.info("Loading tasks...")
+    st.sidebar.info("Loading OPSI tasks...")
 
 # ----------------------------------------------------
 # DASHBOARD OVERVIEW
@@ -179,11 +177,11 @@ if selected_agent == "Dashboard Overview":
     cora_df = load_cora_data()
     opsi_df = load_opsi_data()
 
-    col1, col2, col3, col4 = st.columns(4)
-
-    # STATUS COLUMN HANDLING
+    # Column safety
     status_col = "Status " if "Status " in opsi_df.columns else "Status"
     priority_col = "Priority " if "Priority " in opsi_df.columns else "Priority"
+
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         pending = len(opsi_df[opsi_df[status_col] == "New"]) if not opsi_df.empty else 0
@@ -202,15 +200,15 @@ if selected_agent == "Dashboard Overview":
 
     st.markdown("---")
 
-    # AGENT CARDS
     col1, col2, col3 = st.columns(3)
+
     with col1:
         st.markdown(f"""
         <div class="agent-card">
             <h3>CORA</h3>
             <p>Community Outreach & Research Assistant</p>
             <p><strong>Status:</strong> <span class="status-active">Active</span></p>
-            <p><strong>Leads Generated:</strong> {len(cora_df) if not cora_df.empty else 0}</p>
+            <p><strong>Leads Generated:</strong> {len(cora_df)}</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -230,21 +228,21 @@ if selected_agent == "Dashboard Overview":
             <h3>OPSI</h3>
             <p>Operations & Policy System</p>
             <p><strong>Status:</strong> <span class="status-active">Active</span></p>
-            <p><strong>Tasks:</strong> {len(opsi_df) if not opsi_df.empty else 0}</p>
+            <p><strong>Tasks:</strong> {len(opsi_df)}</p>
         </div>
         """, unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # RECENT LEADS + TASKS
     col1, col2 = st.columns(2)
+
     with col1:
         st.subheader("CORA Recent Leads")
         if not cora_df.empty:
             recent = cora_df.tail(5)[["name", "organization", "email"]]
             st.dataframe(recent, use_container_width=True, hide_index=True)
         else:
-            st.info("No leads yet. Run CORA to generate leads.")
+            st.info("No CORA leads yet.")
 
     with col2:
         st.subheader("OPSI Upcoming Tasks")
@@ -253,7 +251,8 @@ if selected_agent == "Dashboard Overview":
             available = [c for c in display_cols if c in opsi_df.columns]
             st.dataframe(opsi_df[available].head(5), use_container_width=True, hide_index=True)
         else:
-            st.info("No tasks scheduled.")
+            st.info("No OPSI tasks yet.")
+
 
 # ----------------------------------------------------
 # CORA PAGE
@@ -265,12 +264,13 @@ elif selected_agent == "CORA (Lead Generation)":
 
     if not df.empty:
         col1, col2, col3, col4 = st.columns(4)
+
         with col1:
             st.metric("Total Leads", len(df))
 
         with col2:
             today = datetime.now().strftime("%Y-%m-%d")
-            today_leads = df[df["timestamp"].str.contains(today, na=False)] if "timestamp" in df.columns else 0
+            today_leads = df[df["timestamp"].str.contains(today, na=False)] if "timestamp" in df.columns else pd.DataFrame()
             st.metric("Today", len(today_leads))
 
         with col3:
@@ -283,7 +283,7 @@ elif selected_agent == "CORA (Lead Generation)":
 
         st.markdown("---")
 
-        search = st.text_input("Search leads by name, email, or organization")
+        search = st.text_input("Search leads...")
         filtered = df.copy()
 
         if search:
@@ -296,8 +296,9 @@ elif selected_agent == "CORA (Lead Generation)":
 
         st.subheader(f"All Leads ({len(filtered)})")
 
-        display_cols = ["name", "title", "organization", "email", "suggested_action", "timestamp"]
-        available = [c for c in display_cols if c in filtered.columns]
+        view_cols = ["name", "title", "organization", "email", "suggested_action", "timestamp"]
+        available = [col for col in view_cols if col in filtered.columns]
+
         st.dataframe(filtered[available], use_container_width=True, hide_index=True)
 
         st.download_button(
@@ -308,7 +309,8 @@ elif selected_agent == "CORA (Lead Generation)":
         )
 
     else:
-        st.warning("No CORA data available.")
+        st.info("No CORA data available.")
+
 
 # ----------------------------------------------------
 # MARK PAGE
@@ -316,29 +318,25 @@ elif selected_agent == "CORA (Lead Generation)":
 elif selected_agent == "MARK (Marketing AI)":
 
     st.header("MARK - Marketing & Engagement AI")
-
     st.markdown("""
     ### About MARK
-    MARK helps with:
-    • Email/SMS campaigns  
-    • Follow-up automation  
-    • Engagement analytics  
-    • Human-like responses  
-
-    **Status:** Setup in progress  
-    **AI Model:** GPT-4o  
-    **Integrations:** GoHighLevel, Gmail, Calendar
+    MARK assists with:
+    - Marketing automation
+    - SMS/Email campaigns
+    - Audience engagement
+    - Lead follow-up
     """)
 
     st.markdown("---")
-    st.subheader("Chat with MARK")
 
-    user_input = st.text_input("Ask MARK anything...")
+    st.subheader("Chat with MARK")
+    user_input = st.text_input("Ask MARK...")
     if user_input:
         with st.chat_message("user"):
             st.write(user_input)
         with st.chat_message("assistant"):
-            st.write("I’m MARK. I'm still being calibrated.")
+            st.write("I’m MARK. I'm still learning from CORA’s activity.")
+
 
 # ----------------------------------------------------
 # OPSI PAGE
@@ -349,7 +347,7 @@ elif selected_agent == "OPSI (Operations)":
 
     opsi_df = load_opsi_data()
 
-    # SAFE column detection (this prevents KeyError)
+    # Safe column handling
     status_col = "Status " if "Status " in opsi_df.columns else "Status"
     priority_col = "Priority " if "Priority " in opsi_df.columns else "Priority"
 
@@ -372,34 +370,36 @@ elif selected_agent == "OPSI (Operations)":
 
     st.markdown("---")
 
+
+    # ----------------------------------------------------
+    # CREATE TASK PANEL
+    # ----------------------------------------------------
     with st.expander("➕ Create New Task"):
         with st.form("new_task_form"):
 
             title = st.text_input("Task Title*")
-    
-            # Dropdowns with “Select option”
+
             task_type = st.selectbox(
                 "Task Type*",
                 ["Select option", "RFP Submission", "Contract Renewal", "Audit", "Compliance Report"]
             )
-    
+
             assigned_to = st.text_input("Assigned To*", placeholder="Enter name")
-    
+
             deadline = st.date_input("Deadline Date*")
-    
+
             priority = st.selectbox(
                 "Priority*",
                 ["Select option", "High", "Medium", "Low"]
             )
-    
+
             notes = st.text_area("Notes")
-    
+
             submitted = st.form_submit_button("Create Task")
-    
+
             if submitted:
                 errors = []
-    
-                # Validation
+
                 if not title.strip():
                     errors.append("Task Title is required.")
                 if task_type == "Select option":
@@ -408,10 +408,11 @@ elif selected_agent == "OPSI (Operations)":
                     errors.append("Priority is required.")
                 if not assigned_to.strip():
                     errors.append("Assigned To is required.")
-    
+
                 if errors:
                     for e in errors:
                         st.error(e)
+
                 else:
                     task_data = {
                         "title": title,
@@ -422,14 +423,16 @@ elif selected_agent == "OPSI (Operations)":
                         "notes": notes
                     }
                     result = create_opsi_task(task_data)
+
                     if result:
                         st.success("✅ Task created successfully.")
                         st.cache_data.clear()
                         st.rerun()
 
-                else:
-                    st.error("Task title is required.")
 
+    # ----------------------------------------------------
+    # ACTIVE TASKS TABLE
+    # ----------------------------------------------------
     st.markdown("---")
     st.subheader("Active Tasks")
 
@@ -437,6 +440,7 @@ elif selected_agent == "OPSI (Operations)":
         st.dataframe(opsi_df, use_container_width=True, hide_index=True)
     else:
         st.info("No tasks found.")
+
 
 # ----------------------------------------------------
 # FOOTER
@@ -451,9 +455,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
-
-
-
-
