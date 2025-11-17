@@ -138,46 +138,49 @@ if st.sidebar.button("Ask MARK"):
 if st.sidebar.button("View OPSI Tasks"):
     st.sidebar.info("Loading tasks...")
 
+# ------------------------------
+# DASHBOARD OVERVIEW
+# ------------------------------
+
 if selected_agent == "Dashboard Overview":
-    
+
     cora_df = load_cora_data()
     opsi_df = load_opsi_data()
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-        with col1:
-            status_col = 'Status ' if 'Status ' in opsi_df.columns else 'Status'
-            pending = len(opsi_df[opsi_df[status_col] == 'New']) if not opsi_df.empty and status_col in opsi_df.columns else 0
-            st.metric("Pending Tasks", pending)
-        
-        with col2:
-            in_progress = len(opsi_df[opsi_df[status_col] == 'In Progress']) if not opsi_df.empty and status_col in opsi_df.columns else 0
-            st.metric("In Progress", in_progress)
-        
-        with col3:
-            priority_col = 'Priority ' if 'Priority ' in opsi_df.columns else 'Priority'
-            high = len(opsi_df[opsi_df[priority_col] == 'High']) if not opsi_df.empty and priority_col in opsi_df.columns else 0
-            st.metric("High Priority", high)
-        
-        with col4:
-            response_rate = "68%" if not cora_df.empty else "N/A"
-            st.metric("Overall Performance", response_rate)
 
-    
-    st.markdown("---")
-    
-    col1, col2, col3 = st.columns(3)
-    
+    col1, col2, col3, col4 = st.columns(4)
+
     with col1:
-        st.markdown("""
+        status_col = 'Status ' if 'Status ' in opsi_df.columns else 'Status'
+        pending = len(opsi_df[opsi_df[status_col] == 'New']) if not opsi_df.empty and status_col in opsi_df.columns else 0
+        st.metric("Pending Tasks", pending)
+
+    with col2:
+        in_progress = len(opsi_df[opsi_df[status_col] == 'In Progress']) if not opsi_df.empty and status_col in opsi_df.columns else 0
+        st.metric("In Progress", in_progress)
+
+    with col3:
+        priority_col = 'Priority ' if 'Priority ' in opsi_df.columns else 'Priority'
+        high = len(opsi_df[opsi_df[priority_col] == 'High']) if not opsi_df.empty and priority_col in opsi_df.columns else 0
+        st.metric("High Priority", high)
+
+    with col4:
+        response_rate = "68%" if not cora_df.empty else "N/A"
+        st.metric("Overall Performance", response_rate)
+
+    st.markdown("---")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown(f"""
         <div class="agent-card">
             <h3>CORA</h3>
             <p>Community Outreach & Research Assistant</p>
             <p><strong>Status:</strong> <span class="status-active">Active</span></p>
-            <p><strong>Leads Generated:</strong> {}</p>
+            <p><strong>Leads Generated:</strong> {len(cora_df) if not cora_df.empty else 0}</p>
         </div>
-        """.format(len(cora_df) if not cora_df.empty else 0), unsafe_allow_html=True)
-    
+        """, unsafe_allow_html=True)
+
     with col2:
         st.markdown("""
         <div class="agent-card">
@@ -187,21 +190,21 @@ if selected_agent == "Dashboard Overview":
             <p><strong>Setup:</strong> In Progress</p>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col3:
-        st.markdown("""
+        st.markdown(f"""
         <div class="agent-card">
             <h3>OPSI</h3>
             <p>Operations & Policy System</p>
             <p><strong>Status:</strong> <span class="status-active">Active</span></p>
-            <p><strong>Tasks:</strong> {}</p>
+            <p><strong>Tasks:</strong> {len(opsi_df) if not opsi_df.empty else 0}</p>
         </div>
-        """.format(len(opsi_df) if not opsi_df.empty else 0), unsafe_allow_html=True)
-    
+        """, unsafe_allow_html=True)
+
     st.markdown("---")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.subheader("CORA Recent Leads")
         if not cora_df.empty:
@@ -209,7 +212,7 @@ if selected_agent == "Dashboard Overview":
             st.dataframe(recent, use_container_width=True, hide_index=True)
         else:
             st.info("No leads yet. Run CORA to generate leads.")
-    
+
     with col2:
         st.subheader("OPSI Upcoming Tasks")
         if not opsi_df.empty:
@@ -219,35 +222,39 @@ if selected_agent == "Dashboard Overview":
         else:
             st.info("No tasks scheduled.")
 
+# ------------------------------
+# CORA PAGE
+# ------------------------------
+
 elif selected_agent == "CORA (Lead Generation)":
-    
+
     st.header("CORA - Lead Generation Dashboard")
-    
+
     df = load_cora_data()
-    
+
     if not df.empty:
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
             st.metric("Total Leads", len(df))
-        
+
         with col2:
             today = datetime.now().strftime('%Y-%m-%d')
             today_leads = df[df['timestamp'].str.contains(today, na=False)] if 'timestamp' in df.columns else pd.DataFrame()
             st.metric("Today", len(today_leads))
-        
+
         with col3:
             cities = df['organization'].str.contains('City', case=False, na=False).sum() if 'organization' in df.columns else 0
             st.metric("Cities", cities)
-        
+
         with col4:
             churches = df['organization'].str.contains('Church', case=False, na=False).sum() if 'organization' in df.columns else 0
             st.metric("Churches", churches)
-        
+
         st.markdown("---")
-        
+
         search = st.text_input("Search leads by name, email, or organization", "")
-        
+
         filtered_df = df.copy()
         if search:
             mask = (
@@ -256,28 +263,32 @@ elif selected_agent == "CORA (Lead Generation)":
                 filtered_df['organization'].str.contains(search, case=False, na=False)
             )
             filtered_df = filtered_df[mask]
-        
+
         st.subheader(f"All Leads ({len(filtered_df)})")
-        
+
         display_columns = ['name', 'title', 'organization', 'email', 'suggested_action', 'timestamp']
         available_columns = [col for col in display_columns if col in filtered_df.columns]
-        
+
         st.dataframe(filtered_df[available_columns], use_container_width=True, hide_index=True)
-        
+
         csv = filtered_df.to_csv(index=False)
         st.download_button("Export CSV", csv, f"cora_leads_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
-    
+
     else:
         st.warning("No leads data available.")
         st.info("Run the CORA workflow in n8n to generate leads.")
 
+# ------------------------------
+# MARK PAGE
+# ------------------------------
+
 elif selected_agent == "MARK (Marketing AI)":
-    
+
     st.header("MARK - Marketing & Engagement AI")
     st.write("Your AI Marketing Assistant - Powered by GPT-4o")
-    
+
     col1, col2 = st.columns([2, 1])
-    
+
     with col1:
         st.markdown("""
         ### About MARK
@@ -286,34 +297,34 @@ elif selected_agent == "MARK (Marketing AI)":
         - Schedule meetings and follow-ups automatically
         - Track engagement metrics in real-time
         - Respond like a human expert
-        
+
         **Status:** Setup in progress  
         **AI Model:** GPT-4o  
         **Integrations:** GoHighLevel, Gmail, Calendar
         """)
-    
+
     with col2:
         st.info("Coming Soon!\n\nMARK is being configured.")
-    
+
     st.markdown("---")
-    
+
     st.subheader("Chat with MARK")
-    
+
     user_input = st.text_input("Ask MARK anything about marketing...", placeholder="e.g., How's our email campaign performing?")
-    
+
     if user_input:
         with st.chat_message("user"):
             st.write(user_input)
-        
+
         with st.chat_message("assistant"):
             st.write("Good day. I'm MARK, your marketing intelligence system.")
             st.write(f"I've analyzed your query: '{user_input}'")
             st.write("I'm still being calibrated. Check the CORA dashboard for recent lead activity.")
-    
+
     st.markdown("---")
-    
+
     st.subheader("Campaign Performance")
-    
+
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Active Campaigns", "Coming Soon")
@@ -322,13 +333,17 @@ elif selected_agent == "MARK (Marketing AI)":
     with col3:
         st.metric("Engagement Rate", "Coming Soon")
 
+# ------------------------------
+# OPSI PAGE
+# ------------------------------
+
 elif selected_agent == "OPSI (Operations)":
-    
+
     st.header("OPSI - Operations & Policy System Integrator")
     st.write("Internal Workflow & Compliance Management")
-    
+
     opsi_df = load_opsi_data()
-    
+
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         pending = len(opsi_df[opsi_df['Status '] == 'New']) if not opsi_df.empty else 0
@@ -341,9 +356,9 @@ elif selected_agent == "OPSI (Operations)":
         st.metric("High Priority", high)
     with col4:
         st.metric("Total Tasks", len(opsi_df))
-    
+
     st.markdown("---")
-    
+
     with st.expander("➕ Create New Task"):
         with st.form("new_task_form"):
             title = st.text_input("Task Title*")
@@ -352,9 +367,9 @@ elif selected_agent == "OPSI (Operations)":
             deadline = st.date_input("Deadline Date")
             priority = st.selectbox("Priority", ["High", "Medium", "Low"])
             notes = st.text_area("Notes")
-            
+
             submitted = st.form_submit_button("Create Task")
-            
+
             if submitted:
                 if title:
                     task_data = {
@@ -372,10 +387,10 @@ elif selected_agent == "OPSI (Operations)":
                         st.rerun()
                 else:
                     st.error("Title is required")
-    
+
     st.markdown("---")
     st.subheader("Active Tasks")
-    
+
     if not opsi_df.empty:
         st.dataframe(opsi_df, use_container_width=True, hide_index=True)
     else:
@@ -391,5 +406,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
