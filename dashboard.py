@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import requests
+from datetime import datetime
 
 # Local Modules
 from cora import get_cora_status, get_cora_leads
@@ -65,11 +66,7 @@ def trigger_cora():
             response = requests.post(url, timeout=30)
         
         if response.status_code == 200:
-            try:
-                leads = response.json()
-                st.success(f"✅ CORA generated new leads!")
-            except:
-                st.success("✅ CORA workflow started successfully!")
+            st.success("✅ CORA generated new leads!")
         else:
             st.error(f"Failed → {response.status_code}")
             
@@ -153,19 +150,19 @@ if agent_page == "Dashboard Overview":
     st.markdown("---")
 
     # CORA Leads Preview
-st.subheader("CORA Recent Leads")
-if len(cora_leads) == 0:
-    st.info("No leads yet. Run CORA to generate leads.")
-else:
-    cora_df_display = pd.DataFrame(cora_leads)
-    st.dataframe(cora_df_display)
-    
-    st.download_button(
-        "Export CSV",
-        cora_df_display.to_csv(index=False),
-        f"cora_leads_{datetime.now().strftime('%Y%m%d')}.csv",
-        "text/csv"
-    )
+    st.subheader("CORA Recent Leads")
+    if len(cora_leads) == 0:
+        st.info("No leads yet. Run CORA to generate leads.")
+    else:
+        cora_df_display = pd.DataFrame(cora_leads)
+        st.dataframe(cora_df_display)
+        
+        st.download_button(
+            "Export CSV",
+            cora_df_display.to_csv(index=False),
+            f"cora_leads_{datetime.now().strftime('%Y%m%d')}.csv",
+            "text/csv"
+        )
 
 # ----------------------------------------------------------------
 #                        CORA PAGE
@@ -277,11 +274,3 @@ elif agent_page == "OPSI (Operations)":
                         st.success("Task created successfully.")
                         st.cache_data.clear()
                         st.rerun()
-
-
-
-
-
-
-
-
