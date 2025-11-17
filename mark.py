@@ -1,5 +1,8 @@
 import streamlit as st
 
+def get_mark_status():
+    return "Idle"
+
 def mark_page():
     st.header("MARK - Marketing AI")
 
