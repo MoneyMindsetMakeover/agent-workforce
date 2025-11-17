@@ -1,9 +1,10 @@
 import streamlit as st
 from datetime import datetime
+import pandas as pd
 from cora import get_cora_status, get_cora_leads
 from mark import get_mark_status
 from opsi import get_opsi_status, load_opsi_tasks
-from utils import load_cora_data, send_approved_leads_to_mark, load_opsi_data, send_opsi_task
+from utils import load_cora_data, send_approved_leads_to_mark, load_opsi_data, send_opsi_task, update_opsi_task
 
 # ========================================
 # PAGE CONFIGURATION
@@ -186,15 +187,65 @@ if selected_page == "Dashboard Overview":
     
     st.markdown("---")
     
-    # Recent Activity
-    st.subheader("📊 Recent Activity")
+    # Recent Activity - Two Columns
+    col1, col2 = st.columns([1, 1])
     
-    if cora_leads:
-        import pandas as pd
-        recent_df = pd.DataFrame(cora_leads).head(5)
-        st.dataframe(recent_df, use_container_width=True, hide_index=True)
-    else:
-        st.info("No recent activity. Run CORA to generate leads.")
+    with col1:
+        st.markdown("### 📊 Recent Leads")
+        if cora_leads:
+            recent_df = pd.DataFrame(cora_leads).head(5)
+            st.dataframe(recent_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No recent leads. Run CORA to generate leads.")
+    
+    with col2:
+        st.markdown("### 🔥 High Priority Pending Tasks")
+        if not opsi_tasks.empty:
+            # Determine column names (handle trailing spaces)
+            status_col = "Status " if "Status " in opsi_tasks.columns else "Status"
+            priority_col = "Priority " if "Priority " in opsi_tasks.columns else "Priority"
+            task_id_col = "Task ID" if "Task ID" in opsi_tasks.columns else "OPSI ID"
+            task_title_col = "Task Title" if "Task Title" in opsi_tasks.columns else "Title"
+            
+            # Filter for High Priority + New/Pending status
+            high_priority_pending = opsi_tasks[
+                (opsi_tasks[priority_col] == "High") & 
+                (opsi_tasks[status_col].isin(["New", "Pending"]))
+            ].head(5)
+            
+            if not high_priority_pending.empty:
+                # Display each task with quick update option
+                for idx, task in high_priority_pending.iterrows():
+                    with st.container():
+                        col_a, col_b = st.columns([4, 1])
+                        
+                        with col_a:
+                            task_title = task.get(task_title_col, 'N/A')
+                            st.write(f"**{task_title}**")
+                            st.caption(f"⏰ Deadline: {task.get('Deadline Date', 'N/A')} | 👤 {task.get('Assigned To', 'N/A')}")
+                        
+                        with col_b:
+                            # Quick status update button
+                            if st.button("▶️ Start", key=f"quick_start_{idx}", help="Mark as In Progress", use_container_width=True):
+                                task_id = task.get(task_id_col, '')
+                                if task_id:
+                                    update_data = {
+                                        "taskId": task_id,
+                                        "status": "In Progress",
+                                        "priority": task.get(priority_col, ''),
+                                        "notes": task.get('Notes', '')
+                                    }
+                                    result = update_opsi_task(update_data)
+                                    if result:
+                                        st.success("✅ Started!")
+                                        st.cache_data.clear()
+                                        st.rerun()
+                        
+                        st.divider()
+            else:
+                st.success("✅ No high priority pending tasks")
+        else:
+            st.info("No tasks available")
 
 elif selected_page == "Approve Leads":
     # ========================================
@@ -368,6 +419,8 @@ elif selected_page == "Manage Tasks":
     # Determine column names (handle trailing spaces)
     status_col = "Status " if "Status " in opsi_df.columns else "Status"
     priority_col = "Priority " if "Priority " in opsi_df.columns else "Priority"
+    task_id_col = "Task ID" if "Task ID" in opsi_df.columns else "OPSI ID"
+    task_title_col = "Task Title" if "Task Title" in opsi_df.columns else "Title"
     
     # Metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -449,12 +502,101 @@ elif selected_page == "Manage Tasks":
     st.markdown("---")
     
     # ========================================
-    # ACTIVE TASKS
+    # ACTIVE TASKS WITH UPDATE FUNCTIONALITY
     # ========================================
     st.subheader("Active Tasks")
     
     if not opsi_df.empty:
-        st.dataframe(opsi_df, hide_index=True, use_container_width=True)
+        # Add search/filter
+        search_task = st.text_input("🔍 Search tasks by title, assignee, or type...", key="task_search")
+        
+        filtered_tasks = opsi_df.copy()
+        if search_task:
+            assigned_col = "Assigned To" if "Assigned To" in opsi_df.columns else "AssignedTo"
+            task_type_col = "Task Type" if "Task Type" in opsi_df.columns else "TaskType"
+            
+            mask = (
+                opsi_df[task_title_col].str.contains(search_task, case=False, na=False) |
+                opsi_df.get(assigned_col, pd.Series(dtype='object')).str.contains(search_task, case=False, na=False) |
+                opsi_df.get(task_type_col, pd.Series(dtype='object')).str.contains(search_task, case=False, na=False)
+            )
+            filtered_tasks = opsi_df[mask]
+        
+        st.dataframe(filtered_tasks, hide_index=True, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # ========================================
+        # UPDATE TASK SECTION
+        # ========================================
+        with st.expander("✏️ Update Task", expanded=False):
+            st.markdown("**Select a task to update**")
+            
+            # Create task selection dropdown
+            if task_id_col in opsi_df.columns and task_title_col in opsi_df.columns:
+                task_options = {
+                    f"{row[task_id_col]} - {row[task_title_col]}": row[task_id_col] 
+                    for _, row in opsi_df.iterrows()
+                }
+                
+                selected_task_label = st.selectbox(
+                    "Select Task:",
+                    options=list(task_options.keys()),
+                    key="task_selector"
+                )
+                
+                if selected_task_label:
+                    selected_task_id = task_options[selected_task_label]
+                    
+                    # Get current task details
+                    task_row = opsi_df[opsi_df[task_id_col] == selected_task_id].iloc[0]
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.markdown("**Current Details:**")
+                        st.write(f"**Title:** {task_row[task_title_col]}")
+                        st.write(f"**Status:** {task_row[status_col]}")
+                        st.write(f"**Priority:** {task_row[priority_col]}")
+                        st.write(f"**Assigned To:** {task_row.get('Assigned To', 'N/A')}")
+                        st.write(f"**Deadline:** {task_row.get('Deadline Date', 'N/A')}")
+                    
+                    with col2:
+                        st.markdown("**Update:**")
+                        new_status = st.selectbox(
+                            "New Status:",
+                            options=["New", "In Progress", "Completed", "On Hold", "Cancelled"],
+                            index=["New", "In Progress", "Completed", "On Hold", "Cancelled"].index(task_row[status_col]) if task_row[status_col] in ["New", "In Progress", "Completed", "On Hold", "Cancelled"] else 0,
+                            key="new_status_select"
+                        )
+                        
+                        new_priority = st.selectbox(
+                            "New Priority:",
+                            options=["High", "Medium", "Low"],
+                            index=["High", "Medium", "Low"].index(task_row[priority_col]) if task_row[priority_col] in ["High", "Medium", "Low"] else 1,
+                            key="new_priority_select"
+                        )
+                        
+                        update_notes = st.text_area("Update Notes:", value=task_row.get('Notes', ''), key="update_notes")
+                        
+                        if st.button("💾 Update Task", type="primary", use_container_width=True):
+                            update_data = {
+                                "taskId": selected_task_id,
+                                "status": new_status,
+                                "priority": new_priority,
+                                "notes": update_notes
+                            }
+                            
+                            result = update_opsi_task(update_data)
+                            
+                            if result:
+                                st.success(f"✅ Task {selected_task_id} updated successfully!")
+                                st.cache_data.clear()
+                                st.rerun()
+                            else:
+                                st.error("❌ Failed to update task")
+            else:
+                st.warning("⚠️ Task ID or Title column not found in data")
     else:
         st.info("No tasks found. Create your first task above.")
 
