@@ -355,7 +355,7 @@ elif selected_page == "Approve Leads":
                         st.rerun()
                     else:
                         st.error("❌ Failed to approve leads")
-            )
+            
         else:
             st.info("No leads match your search criteria.")
 
@@ -608,3 +608,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
