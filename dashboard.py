@@ -238,16 +238,17 @@ elif selected_page == "Approve Leads":
             st.metric("Total Leads", len(cora_df))
         
         with col2:
-            qualified = len(cora_df[cora_df['Status'] == 'Qualified'])
-            st.metric("Qualified", qualified)
+            today = datetime.now().strftime("%Y-%m-%d")
+            today_count = cora_df["timestamp"].str.contains(today, na=False).sum() if "timestamp" in cora_df.columns else 0
+            st.metric("Today", today_count)
         
         with col3:
-            contacted = len(cora_df[cora_df['Status'] == 'Contacted'])
-            st.metric("Contacted", contacted)
+            cities = cora_df["organization"].str.contains("City", case=False, na=False).sum() if "organization" in cora_df.columns else 0
+            st.metric("Cities", cities)
         
         with col4:
-            today_leads = len(cora_df[cora_df['Created Date'] == datetime.now().strftime("%Y-%m-%d")])
-            st.metric("Today's Leads", today_leads)
+            churches = cora_df["organization"].str.contains("Church", case=False, na=False).sum() if "organization" in cora_df.columns else 0
+            st.metric("Churches", churches)
         
         st.markdown("---")
         
