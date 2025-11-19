@@ -241,7 +241,7 @@ if st.session_state.selected_page == "Dashboard Overview":
                         
                         with col_b:
                             # Navigate to Manage Tasks button
-                            if st.button("▶️ Start", key=f"quick_start_{idx}", help="Go to Manage Tasks", use_container_width=True):
+                            if st.button("Start", key=f"quick_start_{idx}", help="Go to Manage Tasks", use_container_width=True):
                                 st.session_state.selected_page = "Manage Tasks"
                                 st.rerun()
                         
@@ -742,4 +742,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
