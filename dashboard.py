@@ -205,6 +205,11 @@ if st.session_state.selected_page == "Dashboard Overview":
         if cora_leads:
             recent_df = pd.DataFrame(cora_leads).head(5)
             st.dataframe(recent_df, use_container_width=True, hide_index=True)
+            
+            # Add Approve Leads button
+            if st.button("✅ Go to Approve Leads", use_container_width=True, type="primary"):
+                st.session_state.selected_page = "Approve Leads"
+                st.rerun()
         else:
             st.info("No recent leads. Run CORA to generate leads.")
     
@@ -295,6 +300,10 @@ elif st.session_state.selected_page == "Approve Leads":
             
             # TOP APPROVE BUTTON
             col1, col2, col3 = st.columns([2, 2, 2])
+            with col1:
+                if st.button("🔄 Refresh Data", use_container_width=True, key="refresh_top"):
+                    st.cache_data.clear()
+                    st.rerun()
             with col2:
                 approve_btn_top = st.button(
                     "✅ Approve Selected Leads",
@@ -305,23 +314,13 @@ elif st.session_state.selected_page == "Approve Leads":
             
             st.markdown("---")
             
-            # Scrollable container for leads
-            st.markdown("""
-            <style>
-            .scrollable-leads {
-                max-height: 500px;
-                overflow-y: auto;
-                border: 1px solid #e0e0e0;
-                border-radius: 5px;
-                padding: 10px;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            # Display leads with checkboxes in scrollable container
+            # Display leads with checkboxes in container with fixed height
             selected_lead_ids = []
             
-            with st.container():
+            # Create scrollable container using st.container with height parameter
+            leads_container = st.container(height=500)
+            
+            with leads_container:
                 for idx, row in df.iterrows():
                     col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
                     
