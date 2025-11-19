@@ -119,7 +119,7 @@ with st.sidebar:
 # ========================================
 
 # Header
-st.markdown('<p class="main-header">⚡ ApexxAdams Multi-Agent Command Center</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header" style="color: #ffffff;">⚡ ApexxAdams Multi-Agent Command Center</p>', unsafe_allow_html=True)
 st.markdown("**Your AI-Powered Business Operations Platform**")
 st.markdown("---")
 
@@ -293,40 +293,62 @@ elif st.session_state.selected_page == "Approve Leads":
             with col2:
                 st.markdown("*Check the box to select all leads at once*")
             
+            # TOP APPROVE BUTTON
+            col1, col2, col3 = st.columns([2, 2, 2])
+            with col2:
+                approve_btn_top = st.button(
+                    "✅ Approve Selected Leads",
+                    type="primary",
+                    use_container_width=True,
+                    key="approve_top"
+                )
+            
             st.markdown("---")
             
-            # Display leads with checkboxes
+            # Scrollable container for leads
+            st.markdown("""
+            <style>
+            .scrollable-leads {
+                max-height: 500px;
+                overflow-y: auto;
+                border: 1px solid #e0e0e0;
+                border-radius: 5px;
+                padding: 10px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            # Display leads with checkboxes in scrollable container
             selected_lead_ids = []
             
-            # Create a container for better spacing
-            for idx, row in df.iterrows():
-                col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
-                
-                with col1:
-                    # Use index to ensure unique keys
-                    is_selected = st.checkbox(
-                        "✓",
-                        value=select_all,
-                        key=f"lead_check_{idx}",
-                        label_visibility="collapsed"
-                    )
-                    if is_selected:
-                        lead_id = row.get('Lead ID', '')
-                        if lead_id:  # Only add non-empty Lead IDs
-                            selected_lead_ids.append(lead_id)
-                
-                with col2:
-                    st.write(f"**{row.get('Name', 'N/A')}**")
-                
-                with col3:
-                    st.write(row.get('Organization', 'N/A'))
-                
-                with col4:
-                    email = row.get('Email', 'N/A')
-                    st.write(email[:25] + '...' if len(str(email)) > 25 else email)
-                
-                with col5:
-                    st.code(row.get('Lead ID', 'N/A'), language=None)
+            with st.container():
+                for idx, row in df.iterrows():
+                    col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
+                    
+                    with col1:
+                        is_selected = st.checkbox(
+                            "✓",
+                            value=select_all,
+                            key=f"lead_check_{idx}",
+                            label_visibility="collapsed"
+                        )
+                        if is_selected:
+                            lead_id = row.get('Lead ID', '')
+                            if lead_id:
+                                selected_lead_ids.append(lead_id)
+                    
+                    with col2:
+                        st.write(f"**{row.get('Name', 'N/A')}**")
+                    
+                    with col3:
+                        st.write(row.get('Organization', 'N/A'))
+                    
+                    with col4:
+                        email = row.get('Email', 'N/A')
+                        st.write(email[:25] + '...' if len(str(email)) > 25 else email)
+                    
+                    with col5:
+                        st.code(row.get('Lead ID', 'N/A'), language=None)
             
             st.markdown("---")
             
@@ -337,11 +359,12 @@ elif st.session_state.selected_page == "Approve Leads":
                 st.metric("Selected", len(selected_lead_ids))
             
             with col2:
-                approve_btn = st.button(
+                approve_btn_bottom = st.button(
                     "✅ Approve Selected Leads",
                     type="primary",
                     use_container_width=True,
-                    disabled=len(selected_lead_ids) == 0
+                    disabled=len(selected_lead_ids) == 0,
+                    key="approve_bottom"
                 )
             
             with col3:
@@ -349,8 +372,8 @@ elif st.session_state.selected_page == "Approve Leads":
                     st.cache_data.clear()
                     st.rerun()
             
-            # Handle approval
-            if approve_btn:
+            # Handle approval from either button
+            if approve_btn_top or approve_btn_bottom:
                 if selected_lead_ids:
                     with st.spinner("Sending to MARK..."):
                         success, response = send_approved_leads_to_mark(selected_lead_ids)
