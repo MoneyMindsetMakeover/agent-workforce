@@ -207,7 +207,7 @@ if st.session_state.selected_page == "Dashboard Overview":
             st.dataframe(recent_df, use_container_width=True, hide_index=True)
             
             # Add Approve Leads button
-            if st.button("✅ Go to Approve Leads", use_container_width=True, type="primary"):
+            if st.button("Approve Leads", use_container_width=True, type="primary"):
                 st.session_state.selected_page = "Approve Leads"
                 st.rerun()
         else:
@@ -742,3 +742,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
