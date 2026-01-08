@@ -1,22 +1,38 @@
 import streamlit as st
 import pandas as pd
-from streamlit_gsheets import GSheetsConnection
 import requests
 from datetime import datetime
+import io
 
 # ========================================
-# GOOGLE SHEETS CONNECTION
+# GOOGLE SHEETS CONNECTION (PUBLIC SHEETS)
 # ========================================
 
-@st.cache_resource
-def get_gsheets_connection():
-    """Get Google Sheets connection using Streamlit's built-in connector"""
+def get_sheet_id_from_url(url):
+    """Extract sheet ID from Google Sheets URL"""
+    if '/d/' in url:
+        return url.split('/d/')[1].split('/')[0]
+    return url
+
+@st.cache_data(ttl=300)
+def read_public_gsheet(sheet_url):
+    """Read data from a public Google Sheet"""
     try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        return conn
+        # Extract sheet ID
+        sheet_id = get_sheet_id_from_url(sheet_url)
+        
+        # Export as CSV using Google Sheets export API
+        export_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
+        
+        response = requests.get(export_url)
+        response.raise_for_status()
+        
+        # Read CSV data into DataFrame
+        df = pd.read_csv(io.StringIO(response.text))
+        return df
     except Exception as e:
-        st.error(f"❌ Google Sheets connection error: {e}")
-        return None
+        st.error(f"❌ Error reading Google Sheet: {e}")
+        return pd.DataFrame()
 
 # ========================================
 # CORA DATA FUNCTIONS
@@ -26,16 +42,13 @@ def get_gsheets_connection():
 def load_cora_data():
     """Load CORA leads from Google Sheets"""
     try:
-        conn = get_gsheets_connection()
-        if conn:
-            # Get CORA sheet URL from secrets - access it directly
-            if "CORA_SHEET_URL" in st.secrets:
-                sheet_url = st.secrets["CORA_SHEET_URL"]
-                df = conn.read(spreadsheet=sheet_url, ttl=300)
-                return df
-            else:
-                st.warning("⚠️ CORA_SHEET_URL not found in secrets")
-        return pd.DataFrame()
+        if "CORA_SHEET_URL" in st.secrets:
+            sheet_url = st.secrets["CORA_SHEET_URL"]
+            df = read_public_gsheet(sheet_url)
+            return df
+        else:
+            st.warning("⚠️ CORA_SHEET_URL not found in secrets")
+            return pd.DataFrame()
     except Exception as e:
         st.error(f"❌ Error loading CORA data: {e}")
         return pd.DataFrame()
@@ -64,16 +77,13 @@ def send_approved_leads_to_mark(lead_ids):
 def load_opsi_data():
     """Load OPSI tasks from Google Sheets"""
     try:
-        conn = get_gsheets_connection()
-        if conn:
-            # Get OPSI sheet URL from secrets - access it directly
-            if "OPSI_SHEET_URL" in st.secrets:
-                sheet_url = st.secrets["OPSI_SHEET_URL"]
-                df = conn.read(spreadsheet=sheet_url, ttl=60)
-                return df
-            else:
-                st.warning("⚠️ OPSI_SHEET_URL not found in secrets")
-        return pd.DataFrame()
+        if "OPSI_SHEET_URL" in st.secrets:
+            sheet_url = st.secrets["OPSI_SHEET_URL"]
+            df = read_public_gsheet(sheet_url)
+            return df
+        else:
+            st.warning("⚠️ OPSI_SHEET_URL not found in secrets")
+            return pd.DataFrame()
     except Exception as e:
         st.error(f"❌ Error loading OPSI data: {e}")
         return pd.DataFrame()
