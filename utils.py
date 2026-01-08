@@ -28,9 +28,9 @@ def load_cora_data():
     try:
         conn = get_gsheets_connection()
         if conn:
-            # Get CORA sheet ID from secrets
-            sheet_url = st.secrets.get("CORA_SHEET_URL", "")
-            if sheet_url:
+            # Get CORA sheet URL from secrets - access it directly
+            if "CORA_SHEET_URL" in st.secrets:
+                sheet_url = st.secrets["CORA_SHEET_URL"]
                 df = conn.read(spreadsheet=sheet_url, ttl=300)
                 return df
             else:
@@ -66,9 +66,9 @@ def load_opsi_data():
     try:
         conn = get_gsheets_connection()
         if conn:
-            # Get OPSI sheet URL from secrets
-            sheet_url = st.secrets.get("OPSI_SHEET_URL", "")
-            if sheet_url:
+            # Get OPSI sheet URL from secrets - access it directly
+            if "OPSI_SHEET_URL" in st.secrets:
+                sheet_url = st.secrets["OPSI_SHEET_URL"]
                 df = conn.read(spreadsheet=sheet_url, ttl=60)
                 return df
             else:
