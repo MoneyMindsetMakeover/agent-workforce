@@ -39,31 +39,35 @@ def connect_to_sheets():
         return None
 
 # ========================================
-# CORA DATA FUNCTIONS
+# DAPHNE DATA FUNCTIONS (MMM Donor Prospecting)
 # ========================================
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
-def load_cora_data():
-    """Load CORA leads from Google Sheets"""
+def load_daphne_data():
+    """Load DAPHNE donor prospects from Google Sheets"""
     try:
         client = connect_to_sheets()
         if client:
-            # Get CORA sheet ID from secrets
-            sheet_id = st.secrets["CORA_SHEET_ID"]
+            # Get DAPHNE sheet ID from secrets
+            sheet_id = st.secrets["DAPHNE_SHEET_ID"]
             sheet = client.open_by_key(sheet_id).sheet1
             data = sheet.get_all_records()
             return pd.DataFrame(data)
         return pd.DataFrame()
     except Exception as e:
-        st.error(f"❌ Error loading CORA data: {e}")
+        st.error(f"❌ Error loading DAPHNE data: {e}")
         return pd.DataFrame()
 
-def send_approved_leads_to_mark(lead_ids):
-    """Send approved Lead IDs to MARK webhook"""
-    webhook_url = "https://hackett2k.app.n8n.cloud/webhook/mark-approve-leads"
+def send_approved_leads_to_diana(donor_ids):
+    """Send approved Donor IDs to DIANA webhook"""
+    # Use MMM-specific webhook
+    webhook_url = st.secrets.get(
+        "DIANA_APPROVAL_WEBHOOK", 
+        "https://infomoneymindsetmakeover.app.n8n.cloud/webhook/daphne-approve-leads"
+    )
     
     payload = {
-        "approved_leads": lead_ids,
+        "approved_donors": donor_ids,
         "approved_by": "Dashboard User",
         "timestamp": datetime.now().isoformat()
     }
@@ -96,7 +100,11 @@ def load_opsi_data():
 
 def send_opsi_task(task_data):
     """Send new OPSI task to n8n webhook"""
-    webhook_url = "https://hackett2k.app.n8n.cloud/webhook/opsi-create-task"
+    # Use MMM-specific webhook
+    webhook_url = st.secrets.get(
+        "OPSI_CREATE_WEBHOOK", 
+        "https://infomoneymindsetmakeover.app.n8n.cloud/webhook/opsi-create-task"
+    )
     
     try:
         response = requests.post(webhook_url, json=task_data, timeout=10)
@@ -111,7 +119,11 @@ def send_opsi_task(task_data):
 
 def update_opsi_task(update_data):
     """Update existing OPSI task via n8n webhook"""
-    webhook_url = "https://hackett2k.app.n8n.cloud/webhook/opsi-update-task"
+    # Use MMM-specific webhook
+    webhook_url = st.secrets.get(
+        "OPSI_UPDATE_WEBHOOK", 
+        "https://infomoneymindsetmakeover.app.n8n.cloud/webhook/opsi-update-task"
+    )
     
     try:
         response = requests.post(webhook_url, json=update_data, timeout=10)
