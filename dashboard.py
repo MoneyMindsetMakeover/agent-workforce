@@ -242,8 +242,8 @@ elif st.session_state.selected_page == "Approve Leads":
         status_col = "Status" if "Status" in daphne_df.columns else "status"
         
         if status_col in daphne_df.columns:
-            # Accept "pending review" status from n8n workflow
-pending_df = daphne_df[daphne_df[status_col].str.lower().str.strip() == 'pending review']
+            # FIX: Accept "pending review" status from n8n workflow
+            pending_df = daphne_df[daphne_df[status_col].str.lower().str.strip() == 'pending review']
             
             if not pending_df.empty:
                 st.markdown(f"**{len(pending_df)} prospects awaiting review**")
@@ -587,4 +587,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
