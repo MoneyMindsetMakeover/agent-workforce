@@ -1,17 +1,17 @@
 import streamlit as st
 from datetime import datetime
 import pandas as pd
-from cora import get_cora_status, get_cora_leads
-from mark import get_mark_status
+from daphne import get_daphne_status, get_daphne_leads
+from diana import get_diana_status
 from opsi import get_opsi_status, load_opsi_tasks
-from utils import load_cora_data, send_approved_leads_to_mark, load_opsi_data, send_opsi_task, update_opsi_task
+from utils import load_daphne_data, send_approved_leads_to_diana, load_opsi_data, send_opsi_task, update_opsi_task
 
 # ========================================
 # PAGE CONFIGURATION
 # ========================================
 st.set_page_config(
-    page_title="ApexxAdams Command Center",
-    page_icon="⚡",
+    page_title="Money Mindset Makeover Command Center",
+    page_icon="💰",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -28,7 +28,7 @@ st.markdown("""
         margin-bottom: 0.5rem;
     }
     .agent-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
         padding: 1.5rem;
         border-radius: 10px;
         color: white;
@@ -62,7 +62,7 @@ st.markdown("""
         background: #f9fafb;
         padding: 1rem;
         border-radius: 8px;
-        border-left: 4px solid #667eea;
+        border-left: 4px solid #2E7D32;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -71,7 +71,7 @@ st.markdown("""
 # SIDEBAR NAVIGATION
 # ========================================
 with st.sidebar:
-    st.markdown("### ⚡ ApexxAdams")
+    st.markdown("### 💰 Money Mindset Makeover")
     st.markdown("**Multi-Agent Command Center**")
     st.markdown("---")
     
@@ -96,8 +96,8 @@ with st.sidebar:
     st.markdown("### 📊 System Status")
     
     # Get agent statuses dynamically
-    cora_status = get_cora_status()
-    mark_status = get_mark_status()
+    daphne_status = get_daphne_status()
+    diana_status = get_diana_status()
     opsi_status = get_opsi_status()
     
     # Map status to CSS class
@@ -107,20 +107,20 @@ with st.sidebar:
         "Offline": "status-offline"
     }
     
-    st.markdown(f'<span class="{status_class_map.get(cora_status, "status-offline")}">● CORA: {cora_status}</span>', unsafe_allow_html=True)
-    st.markdown(f'<span class="{status_class_map.get(mark_status, "status-offline")}">● MARK: {mark_status}</span>', unsafe_allow_html=True)
+    st.markdown(f'<span class="{status_class_map.get(daphne_status, "status-offline")}">● DAPHNE: {daphne_status}</span>', unsafe_allow_html=True)
+    st.markdown(f'<span class="{status_class_map.get(diana_status, "status-offline")}">● DIANA: {diana_status}</span>', unsafe_allow_html=True)
     st.markdown(f'<span class="{status_class_map.get(opsi_status, "status-offline")}">● OPSI: {opsi_status}</span>', unsafe_allow_html=True)
     
     st.markdown("---")
-    st.caption(f"v2.0 • Last updated: {datetime.now().strftime('%H:%M:%S')}")
+    st.caption(f"v3.0 • Last updated: {datetime.now().strftime('%H:%M:%S')}")
 
 # ========================================
 # MAIN CONTENT AREA
 # ========================================
 
 # Header
-st.markdown('<p class="main-header" style="color: #ffffff;">⚡ ApexxAdams Multi-Agent Command Center</p>', unsafe_allow_html=True)
-st.markdown("**Your AI-Powered Business Operations Platform**")
+st.markdown('<p class="main-header" style="color: #2E7D32;">💰 Money Mindset Makeover</p>', unsafe_allow_html=True)
+st.markdown("**Multi-Agent Command Center**")
 st.markdown("---")
 
 # ========================================
@@ -136,11 +136,11 @@ if st.session_state.selected_page == "Dashboard Overview":
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        status_badge = f'<span class="{status_class_map.get(cora_status, "status-offline")}">{cora_status.upper()}</span>'
+        status_badge = f'<span class="{status_class_map.get(daphne_status, "status-offline")}">{daphne_status.upper()}</span>'
         st.markdown(f"""
         <div class="agent-card">
-            <h3>🎯 CORA</h3>
-            <p>Community Outreach & Research Assistant</p>
+            <h3>🎯 DAPHNE</h3>
+            <p>Donor & Partner Prospecting Engine</p>
             <div style="margin-top: 1rem;">
                 {status_badge}
             </div>
@@ -148,11 +148,11 @@ if st.session_state.selected_page == "Dashboard Overview":
         """, unsafe_allow_html=True)
     
     with col2:
-        status_badge = f'<span class="{status_class_map.get(mark_status, "status-offline")}">{mark_status.upper()}</span>'
+        status_badge = f'<span class="{status_class_map.get(diana_status, "status-offline")}">{diana_status.upper()}</span>'
         st.markdown(f"""
         <div class="agent-card">
-            <h3>📧 MARK</h3>
-            <p>Marketing & Research Knowledge</p>
+            <h3>💬 DIANA</h3>
+            <p>Donor Intelligence & Nurture Agent</p>
             <div style="margin-top: 1rem;">
                 {status_badge}
             </div>
@@ -177,382 +177,229 @@ if st.session_state.selected_page == "Dashboard Overview":
     col1, col2, col3, col4 = st.columns(4)
     
     # Get data from agents
-    cora_leads = get_cora_leads()
+    daphne_leads = get_daphne_leads()
     opsi_tasks = load_opsi_tasks()
     
     with col1:
-        st.metric("Total Leads", len(cora_leads))
+        st.metric("Total Donor Prospects", len(daphne_leads))
     
     with col2:
-        qualified = sum(1 for lead in cora_leads if lead.get('Status') == 'Qualified')
-        st.metric("Qualified Leads", qualified)
+        approved = sum(1 for lead in daphne_leads if lead.get('Status') == 'approved')
+        st.metric("Approved Prospects", approved)
     
     with col3:
-        contacted = sum(1 for lead in cora_leads if lead.get('Status') == 'Contacted')
-        st.metric("Contacted", contacted)
+        pending = sum(1 for task in opsi_tasks if task.get('Status') == 'New') if not opsi_tasks.empty else 0
+        st.metric("Pending Tasks", pending)
     
     with col4:
-        pending_tasks = len([t for t in opsi_tasks.to_dict('records') if t.get('Status') == 'New' or t.get('Status ') == 'New']) if not opsi_tasks.empty else 0
-        st.metric("Pending Tasks", pending_tasks)
+        st.metric("Active Tasks", len(opsi_tasks) if not opsi_tasks.empty else 0)
     
     st.markdown("---")
     
-    # Recent Activity - Two Columns
-    col1, col2 = st.columns([1, 1])
+    # Recent Activity
+    st.subheader("📊 Recent Activity")
+    
+    col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 📊 Recent Leads")
-        if cora_leads:
-            recent_df = pd.DataFrame(cora_leads).head(5)
-            st.dataframe(recent_df, use_container_width=True, hide_index=True)
-            
-            # Add Approve Leads button
-            if st.button("Approve Leads", use_container_width=True, type="primary"):
-                st.session_state.selected_page = "Approve Leads"
-                st.rerun()
+        st.markdown("**Recent Donor Prospects (DAPHNE)**")
+        if daphne_leads:
+            recent_df = pd.DataFrame(daphne_leads).head(5)
+            display_cols = ['Donor ID', 'Name', 'Organization', 'Status']
+            available_cols = [col for col in display_cols if col in recent_df.columns]
+            st.dataframe(recent_df[available_cols] if available_cols else recent_df, hide_index=True, use_container_width=True)
         else:
-            st.info("No recent leads. Run CORA to generate leads.")
+            st.info("No donor prospects yet.")
     
     with col2:
-        st.markdown("### 🔥 High Priority Pending Tasks")
+        st.markdown("**Recent Tasks (OPSI)**")
         if not opsi_tasks.empty:
-            # Determine column names (handle trailing spaces)
-            status_col = "Status " if "Status " in opsi_tasks.columns else "Status"
-            priority_col = "Priority " if "Priority " in opsi_tasks.columns else "Priority"
-            task_id_col = "Task ID" if "Task ID" in opsi_tasks.columns else "OPSI ID"
-            task_title_col = "Task Title" if "Task Title" in opsi_tasks.columns else "Title"
-            
-            # Filter for High Priority + New/Pending status
-            high_priority_pending = opsi_tasks[
-                (opsi_tasks[priority_col] == "High") & 
-                (opsi_tasks[status_col].isin(["New", "Pending"]))
-            ].head(5)
-            
-            if not high_priority_pending.empty:
-                # Display each task with quick update option
-                for idx, task in high_priority_pending.iterrows():
-                    with st.container():
-                        col_a, col_b = st.columns([4, 1])
-                        
-                        with col_a:
-                            task_title = task.get(task_title_col, 'N/A')
-                            st.write(f"**{task_title}**")
-                            st.caption(f"⏰ Deadline: {task.get('Deadline Date', 'N/A')} | 👤 {task.get('Assigned To', 'N/A')}")
-                        
-                        with col_b:
-                            # Navigate to Manage Tasks button
-                            if st.button("Start", key=f"quick_start_{idx}", help="Go to Manage Tasks", use_container_width=True):
-                                st.session_state.selected_page = "Manage Tasks"
-                                st.rerun()
-                        
-                        st.divider()
-            else:
-                st.success("✅ No high priority pending tasks")
+            recent_tasks = opsi_tasks.head(5)
+            task_cols = ['Task ID', 'Task Title', 'Status', 'Priority']
+            available_cols = [col for col in task_cols if col in recent_tasks.columns]
+            st.dataframe(recent_tasks[available_cols] if available_cols else recent_tasks, hide_index=True, use_container_width=True)
         else:
-            st.info("No tasks available")
+            st.info("No tasks yet.")
 
 elif st.session_state.selected_page == "Approve Leads":
     # ========================================
     # APPROVE LEADS PAGE
     # ========================================
     
-    st.header("📧 Approve Leads for Outreach")
-    st.write("Review and approve leads for MARK to send outreach emails")
+    st.subheader("🎯 Review & Approve DAPHNE Prospects")
+    st.markdown("Review donor prospects researched by DAPHNE and approve them for DIANA outreach.")
+    st.markdown("---")
     
-    df = load_cora_data()
+    # Load DAPHNE data
+    daphne_df = load_daphne_data()
     
-    if df.empty:
-        st.info("No leads available. Run CORA to generate leads.")
-    else:
-        # Metrics
-        col1, col2, col3, col4 = st.columns(4)
+    if not daphne_df.empty:
+        # Filter for pending leads
+        status_col = "Status" if "Status" in daphne_df.columns else "status"
         
-        with col1:
-            st.metric("Total Leads", len(df))
-        
-        with col2:
-            today = datetime.now().strftime("%Y-%m-%d")
-            today_count = df["timestamp"].str.contains(today, na=False).sum() if "timestamp" in df.columns else 0
-            st.metric("Today", today_count)
-        
-        with col3:
-            cities = df["organization"].str.contains("City", case=False, na=False).sum() if "organization" in df.columns else 0
-            st.metric("Cities", cities)
-        
-        with col4:
-            churches = df["organization"].str.contains("Church", case=False, na=False).sum() if "organization" in df.columns else 0
-            st.metric("Churches", churches)
-        
-        st.markdown("---")
-        
-        # ========================================
-        # APPROVE LEADS SECTION
-        # ========================================
-        if 'Lead ID' in df.columns:
-            st.markdown("### Select Leads to Approve")
+        if status_col in daphne_df.columns:
+            pending_df = daphne_df[daphne_df[status_col] == 'pending']
             
-            # Select All checkbox
-            col1, col2 = st.columns([1, 5])
-            with col1:
-                select_all = st.checkbox("Select All", key="select_all_cora")
-            with col2:
-                st.markdown("*Check the box to select all leads at once*")
-            
-            # TOP APPROVE BUTTON
-            col1, col2, col3 = st.columns([2, 2, 2])
-            with col1:
-                if st.button("🔄 Refresh Data", use_container_width=True, key="refresh_top"):
-                    st.cache_data.clear()
-                    st.rerun()
-            with col2:
-                approve_btn_top = st.button(
-                    "✅ Approve Selected Leads",
-                    type="primary",
-                    use_container_width=True,
-                    key="approve_top"
+            if not pending_df.empty:
+                st.markdown(f"**{len(pending_df)} prospects awaiting review**")
+                
+                # Display pending leads
+                display_cols = ['Donor ID', 'Name', 'Organization', 'Email', 'Support Type', 'Reason']
+                available_cols = [col for col in display_cols if col in pending_df.columns]
+                
+                st.dataframe(
+                    pending_df[available_cols],
+                    hide_index=True,
+                    use_container_width=True
                 )
-            
-            st.markdown("---")
-            
-            # Display leads with checkboxes in container with fixed height
-            selected_lead_ids = []
-            
-            # Create scrollable container using st.container with height parameter
-            leads_container = st.container(height=500)
-            
-            with leads_container:
-                for idx, row in df.iterrows():
-                    col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
+                
+                st.markdown("---")
+                
+                # Approval section
+                st.subheader("✅ Approve Prospects")
+                
+                # Get Donor ID column (handle variations)
+                donor_id_col = "Donor ID" if "Donor ID" in pending_df.columns else "DonorID"
+                
+                if donor_id_col in pending_df.columns:
+                    # Multi-select for leads
+                    donor_options = {
+                        f"{row[donor_id_col]} - {row.get('Name', 'N/A')} ({row.get('Organization', 'N/A')})": row[donor_id_col]
+                        for _, row in pending_df.iterrows()
+                    }
                     
-                    with col1:
-                        is_selected = st.checkbox(
-                            "✓",
-                            value=select_all,
-                            key=f"lead_check_{idx}",
-                            label_visibility="collapsed"
-                        )
-                        if is_selected:
-                            lead_id = row.get('Lead ID', '')
-                            if lead_id:
-                                selected_lead_ids.append(lead_id)
+                    selected_leads = st.multiselect(
+                        "Select prospects to approve for DIANA outreach:",
+                        options=list(donor_options.keys()),
+                        key="lead_approval_multiselect"
+                    )
                     
-                    with col2:
-                        st.write(f"**{row.get('Name', 'N/A')}**")
-                    
-                    with col3:
-                        st.write(row.get('Organization', 'N/A'))
-                    
-                    with col4:
-                        email = row.get('Email', 'N/A')
-                        st.write(email[:25] + '...' if len(str(email)) > 25 else email)
-                    
-                    with col5:
-                        st.code(row.get('Lead ID', 'N/A'), language=None)
-            
-            st.markdown("---")
-            
-            # Approval controls
-            col1, col2, col3 = st.columns([2, 2, 2])
-            
-            with col1:
-                st.metric("Selected", len(selected_lead_ids))
-            
-            with col2:
-                approve_btn_bottom = st.button(
-                    "✅ Approve Selected Leads",
-                    type="primary",
-                    use_container_width=True,
-                    disabled=len(selected_lead_ids) == 0,
-                    key="approve_bottom"
-                )
-            
-            with col3:
-                if st.button("🔄 Refresh Data", use_container_width=True):
-                    st.cache_data.clear()
-                    st.rerun()
-            
-            # Handle approval from either button
-            if approve_btn_top or approve_btn_bottom:
-                if selected_lead_ids:
-                    with st.spinner("Sending to MARK..."):
-                        success, response = send_approved_leads_to_mark(selected_lead_ids)
+                    if selected_leads:
+                        st.markdown(f"**{len(selected_leads)} prospect(s) selected**")
                         
-                        if success:
-                            st.success(f"✅ Successfully approved {len(selected_lead_ids)} lead(s)!")
-                            st.info("🤖 MARK will send outreach emails shortly.")
-                            
-                            # Show approved leads
-                            with st.expander("View Approved Leads"):
-                                for lead_id in selected_lead_ids:
-                                    st.write(f"• {lead_id}")
-                        else:
-                            st.error(f"❌ Failed to send to MARK: {response}")
-                            st.info("💡 Check that the MARK webhook is running in n8n")
+                        col1, col2 = st.columns([3, 1])
+                        
+                        with col2:
+                            if st.button("✅ Approve Selected", type="primary", use_container_width=True):
+                                # Get the actual Donor IDs
+                                approved_ids = [donor_options[lead] for lead in selected_leads]
+                                
+                                # Send to DIANA
+                                success, response = send_approved_leads_to_diana(approved_ids)
+                                
+                                if success:
+                                    st.success(f"✅ {len(approved_ids)} prospects approved and sent to DIANA!")
+                                    st.cache_data.clear()
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ Failed to approve prospects: {response}")
                 else:
-                    st.warning("⚠️ Please select at least one lead to approve")
-        
-        st.markdown("---")
-        
-        # ========================================
-        # SEARCH AND FILTER
-        # ========================================
-        search = st.text_input("🔍 Search leads by name, email, or organization...")
-        filtered = df.copy()
-        
-        if search:
-            mask = (
-                df["name"].str.contains(search, case=False, na=False) |
-                df["email"].str.contains(search, case=False, na=False) |
-                df["organization"].str.contains(search, case=False, na=False)
-            )
-            filtered = df[mask]
-        
-        # ========================================
-        # LEADS TABLE
-        # ========================================
-        st.subheader(f"All Leads ({len(filtered)})")
-        
-        if not filtered.empty:
-            st.dataframe(filtered, use_container_width=True, hide_index=True)
-            
-            # Export button
-            csv = filtered.to_csv(index=False)
-            st.download_button(
-                "📥 Export to CSV",
-                csv,
-                f"cora_leads_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                "text/csv",
-                use_container_width=False
-            )
+                    st.warning("⚠️ Donor ID column not found in data")
+            else:
+                st.info("✨ All prospects have been reviewed! No pending approvals.")
         else:
-            st.info("No leads match your search criteria.")
+            st.warning("⚠️ Status column not found in data")
+    else:
+        st.info("No DAPHNE data available. Check Google Sheets connection.")
 
 elif st.session_state.selected_page == "Manage Tasks":
     # ========================================
     # MANAGE TASKS PAGE (OPSI)
     # ========================================
     
-    # Scroll anchor at top
-    st.markdown('<div id="manage-tasks-top"></div>', unsafe_allow_html=True)
-    
-    st.header("📋 Manage Tasks")
-    st.write("Create and track compliance tasks, deadlines, and operations")
-    
-    opsi_df = load_opsi_data()
-    
-    # Determine column names (handle trailing spaces)
-    status_col = "Status " if "Status " in opsi_df.columns else "Status"
-    priority_col = "Priority " if "Priority " in opsi_df.columns else "Priority"
-    task_id_col = "Task ID" if "Task ID" in opsi_df.columns else "OPSI ID"
-    task_title_col = "Task Title" if "Task Title" in opsi_df.columns else "Title"
-    
-    # Metrics
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        pending = len(opsi_df[opsi_df[status_col] == "New"]) if not opsi_df.empty else 0
-        st.metric("Pending", pending)
-    
-    with col2:
-        in_progress = len(opsi_df[opsi_df[status_col] == "In Progress"]) if not opsi_df.empty else 0
-        st.metric("In Progress", in_progress)
-    
-    with col3:
-        high = len(opsi_df[opsi_df[priority_col] == "High"]) if not opsi_df.empty else 0
-        st.metric("High Priority", high)
-    
-    with col4:
-        st.metric("Total Tasks", len(opsi_df))
-    
+    st.subheader("📋 OPSI Task Management")
+    st.markdown("Manage tasks, RFPs, and operational workflows.")
     st.markdown("---")
     
-    # ========================================
-    # CREATE TASK
-    # ========================================
-    with st.expander("➕ Create New Task", expanded=False):
-        with st.form("task_form"):
-            
-            title = st.text_input("Task Title*")
-            
-            task_type = st.selectbox(
-                "Task Type*",
-                ["Select option", "RFP Submission", "Contract Renewal", "Audit", "Compliance Report", "Other"]
-            )
-            
-            assigned_to = st.text_input("Assigned To*", placeholder="Enter person name")
-            
-            deadline = st.date_input("Deadline Date*")
-            
-            priority = st.selectbox(
-                "Priority*",
-                ["Select option", "High", "Medium", "Low"]
-            )
-            
-            notes = st.text_area("Notes")
-            
-            submitted = st.form_submit_button("Create Task")
-            
-            if submitted:
-                errors = []
-                
-                if not title.strip():
-                    errors.append("Task title is required.")
-                if task_type == "Select option":
-                    errors.append("Task type is required.")
-                if priority == "Select option":
-                    errors.append("Priority is required.")
-                if not assigned_to.strip():
-                    errors.append("Assigned To is required.")
-                
-                if errors:
-                    for e in errors:
-                        st.error(e)
-                else:
-                    task_data = {
-                        "title": title,
-                        "taskType": task_type,
-                        "assignedTo": assigned_to,
-                        "deadline": str(deadline),
-                        "priority": priority,
-                        "notes": notes,
-                    }
-                    result = send_opsi_task(task_data)
-                    
-                    if result:
-                        st.success("✅ Task created successfully!")
-                        st.cache_data.clear()
-                        st.markdown("""
-                        <script>
-                            window.parent.document.querySelector('[data-testid="stAppViewContainer"]').scrollTop = 0;
-                        </script>
-                        """, unsafe_allow_html=True)
-                        st.rerun()
-    
-    # ========================================
-    # UPDATE TASK SECTION
-    # ========================================
-    
-    # Show success message if it exists in session state
+    # Success message from previous update
     if 'update_success_msg' in st.session_state:
         st.success(st.session_state.update_success_msg)
         del st.session_state.update_success_msg
     
-    # Keep expander open if search is active
-    is_expanded = st.session_state.get('task_id_search', '') != ''
+    # ========================================
+    # CREATE NEW TASK
+    # ========================================
+    st.subheader("📝 Create New Task")
     
-    with st.expander("✏️ Update Task", expanded=is_expanded):
-        st.markdown("**Select a task to update**")
+    with st.form("new_task_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
         
-        # Initialize session state for search
+        with col1:
+            task_title = st.text_input("Task Title *")
+            task_type = st.selectbox(
+                "Task Type *",
+                ["RFP Submission", "Grant Application", "Partnership Outreach", "Program Development", "Other"]
+            )
+            assigned_to = st.text_input("Assigned To")
+        
+        with col2:
+            deadline = st.date_input("Deadline")
+            status = st.selectbox(
+                "Status *",
+                ["New", "In Progress", "Completed", "On Hold", "Cancelled"]
+            )
+            priority = st.selectbox(
+                "Priority *",
+                ["High", "Medium", "Low"]
+            )
+        
+        notes = st.text_area("Notes")
+        
+        submitted = st.form_submit_button("📋 Create Task", use_container_width=True, type="primary")
+        
+        if submitted:
+            if task_title and task_type:
+                # Generate Task ID
+                task_id = f"TASK-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+                
+                task_data = {
+                    "taskId": task_id,
+                    "taskType": task_type,
+                    "title": task_title,
+                    "assignedTo": assigned_to,
+                    "deadline": str(deadline),
+                    "status": status,
+                    "priority": priority,
+                    "notes": notes,
+                    "timestamp": datetime.now().isoformat()
+                }
+                
+                result = send_opsi_task(task_data)
+                
+                if result:
+                    st.success(f"✅ Task {task_id} created successfully!")
+                    st.cache_data.clear()
+                    st.rerun()
+                else:
+                    st.error("❌ Failed to create task")
+            else:
+                st.error("❌ Please fill in all required fields (*)")
+    
+    st.markdown("---")
+    
+    # ========================================
+    # UPDATE EXISTING TASK
+    # ========================================
+    st.subheader("✏️ Update Task")
+    
+    opsi_df = load_opsi_data()
+    
+    if not opsi_df.empty:
+        # Initialize search state
         if 'task_id_search' not in st.session_state:
             st.session_state.task_id_search = ""
         
-        # Search Task ID field
+        # Get column names (handle variations)
+        task_id_col = "Task ID" if "Task ID" in opsi_df.columns else "TaskID"
+        task_title_col = "Task Title" if "Task Title" in opsi_df.columns else "Title"
+        status_col = "Status" if "Status" in opsi_df.columns else "status"
+        priority_col = "Priority" if "Priority" in opsi_df.columns else "priority"
+        
+        # Search box
         task_id_search = st.text_input(
-            "🔍 Search Task ID:",
+            "🔍 Search by Task ID:",
             value=st.session_state.task_id_search,
-            placeholder="Enter Task ID to filter...",
-            key="task_id_search_input"
+            key="task_search_input"
         )
         
         # Update session state
@@ -684,16 +531,9 @@ elif st.session_state.selected_page == "Manage Tasks":
                             result = update_opsi_task(update_data)
                             
                             if result:
-                                # Store success message in session state before rerun
                                 st.session_state.update_success_msg = f"✅ Task {selected_task_id} updated successfully!"
-                                # Clear search on successful update
                                 st.session_state.task_id_search = ""
                                 st.cache_data.clear()
-                                st.markdown("""
-                                <script>
-                                    window.parent.document.querySelector('[data-testid="stAppViewContainer"]').scrollTop = 0;
-                                </script>
-                                """, unsafe_allow_html=True)
                                 st.rerun()
                             else:
                                 st.error("❌ Failed to update task")
@@ -736,11 +576,9 @@ st.markdown("---")
 st.markdown(
     f"""
     <div style='text-align: center; color: #666; padding: 1rem;'>
-        <p><strong>ApexxAdams Multi-Agent Command Center</strong></p>
-        <p>CORA | MARK | OPSI | Last updated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+        <p><strong>Money Mindset Makeover - Multi-Agent Command Center</strong></p>
+        <p>DAPHNE | DIANA | OPSI | Last updated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
     </div>
     """,
     unsafe_allow_html=True
 )
-
-
