@@ -178,7 +178,7 @@ if st.session_state.selected_page == "Dashboard Overview":
     
     # Get data from agents
     daphne_leads = get_daphne_leads()
-    opsi_tasks = load_opsi_tasks()
+    opsi_tasks_df = load_opsi_tasks()
     
     with col1:
         st.metric("Total Donor Prospects", len(daphne_leads))
@@ -188,11 +188,15 @@ if st.session_state.selected_page == "Dashboard Overview":
         st.metric("Approved Prospects", approved)
     
     with col3:
-        pending = sum(1 for task in opsi_tasks if task.get('Status') == 'New') if not opsi_tasks.empty else 0
+        # FIX: Check if DataFrame and handle properly
+        if not opsi_tasks_df.empty and 'Status' in opsi_tasks_df.columns:
+            pending = len(opsi_tasks_df[opsi_tasks_df['Status'] == 'New'])
+        else:
+            pending = 0
         st.metric("Pending Tasks", pending)
     
     with col4:
-        st.metric("Active Tasks", len(opsi_tasks) if not opsi_tasks.empty else 0)
+        st.metric("Active Tasks", len(opsi_tasks_df) if not opsi_tasks_df.empty else 0)
     
     st.markdown("---")
     
@@ -213,8 +217,8 @@ if st.session_state.selected_page == "Dashboard Overview":
     
     with col2:
         st.markdown("**Recent Tasks (OPSI)**")
-        if not opsi_tasks.empty:
-            recent_tasks = opsi_tasks.head(5)
+        if not opsi_tasks_df.empty:
+            recent_tasks = opsi_tasks_df.head(5)
             task_cols = ['Task ID', 'Task Title', 'Status', 'Priority']
             available_cols = [col for col in task_cols if col in recent_tasks.columns]
             st.dataframe(recent_tasks[available_cols] if available_cols else recent_tasks, hide_index=True, use_container_width=True)
