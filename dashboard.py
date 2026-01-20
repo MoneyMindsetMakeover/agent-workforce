@@ -297,6 +297,23 @@ elif st.session_state.selected_page == "Approve Leads":
                 
                 st.markdown("---")
                 
+                # SEARCH BAR
+                search = st.text_input("🔍 Search prospects by name, email, or organization...", key="search_filter")
+                
+                # Filter dataframe based on search
+                filtered_df = df.copy()
+                if search:
+                    search_lower = search.lower()
+                    mask = (
+                        df.get('Name', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
+                        df.get('Email', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
+                        df.get('Organization', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False)
+                    )
+                    filtered_df = df[mask]
+                
+                st.markdown(f"**Showing {len(filtered_df)} of {len(df)} prospects**")
+                st.markdown("---")
+                
                 # Display prospects with checkboxes in scrollable container
                 selected_donor_ids = []
                 
@@ -304,7 +321,7 @@ elif st.session_state.selected_page == "Approve Leads":
                 leads_container = st.container(height=500)
                 
                 with leads_container:
-                    for idx, row in df.iterrows():
+                    for idx, row in filtered_df.iterrows():
                         col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
                         
                         with col1:
@@ -373,29 +390,6 @@ elif st.session_state.selected_page == "Approve Leads":
                                 st.info("💡 Check that the DIANA webhook is running in n8n")
                     else:
                         st.warning("⚠️ Please select at least one prospect to approve")
-            
-            st.markdown("---")
-            
-            # ========================================
-            # SEARCH AND FILTER
-            # ========================================
-            search = st.text_input("🔍 Search prospects by name, email, or organization...")
-            filtered = df.copy()
-            
-            if search:
-                search_lower = search.lower()
-                mask = (
-                    df.get('Name', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
-                    df.get('Email', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
-                    df.get('Organization', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False)
-                )
-                filtered = df[mask]
-            
-            if not filtered.empty:
-                st.markdown(f"**Showing {len(filtered)} of {len(df)} prospects**")
-                st.dataframe(filtered, hide_index=True, use_container_width=True)
-            else:
-                st.info("No prospects match your search")
 
 elif st.session_state.selected_page == "Manage Tasks":
     # ========================================
