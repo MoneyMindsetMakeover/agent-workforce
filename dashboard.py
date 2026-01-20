@@ -227,85 +227,175 @@ if st.session_state.selected_page == "Dashboard Overview":
 
 elif st.session_state.selected_page == "Approve Leads":
     # ========================================
-    # APPROVE LEADS PAGE
+    # APPROVE LEADS PAGE (RESTORED ORIGINAL FUNCTIONALITY)
     # ========================================
     
-    st.subheader("🎯 Review & Approve DAPHNE Prospects")
-    st.markdown("Review donor prospects researched by DAPHNE and approve them for DIANA outreach.")
-    st.markdown("---")
+    st.header("📧 Approve Donor Prospects for DIANA Outreach")
+    st.write("Review and approve prospects for DIANA to send outreach emails")
     
-    # Load DAPHNE data
-    daphne_df = load_daphne_data()
+    df = load_daphne_data()
     
-    if not daphne_df.empty:
-        # Filter for pending leads
-        status_col = "Status" if "Status" in daphne_df.columns else "status"
+    if df.empty:
+        st.info("No donor prospects available. Run DAPHNE to generate prospects.")
+    else:
+        # Filter for "pending review" status
+        status_col = "Status" if "Status" in df.columns else "status"
+        if status_col in df.columns:
+            # Accept "pending review" status from n8n workflow
+            df = df[df[status_col].str.lower().str.strip() == 'pending review']
         
-        if status_col in daphne_df.columns:
-            # FIX: Accept "pending review" status from n8n workflow
-            pending_df = daphne_df[daphne_df[status_col].str.lower().str.strip() == 'pending review']
+        if df.empty:
+            st.info("✨ All prospects have been reviewed! No pending approvals.")
+        else:
+            # Metrics
+            col1, col2, col3, col4 = st.columns(4)
             
-            if not pending_df.empty:
-                st.markdown(f"**{len(pending_df)} prospects awaiting review**")
+            with col1:
+                st.metric("Pending Review", len(df))
+            
+            with col2:
+                today = datetime.now().strftime("%Y-%m-%d")
+                today_count = df["Timestamp"].str.contains(today, na=False).sum() if "Timestamp" in df.columns else 0
+                st.metric("Today", today_count)
+            
+            with col3:
+                foundations = df["Donor Type"].str.contains("Foundation", case=False, na=False).sum() if "Donor Type" in df.columns else 0
+                st.metric("Foundations", foundations)
+            
+            with col4:
+                corporates = df["Donor Type"].str.contains("Corporate", case=False, na=False).sum() if "Donor Type" in df.columns else 0
+                st.metric("Corporates", corporates)
+            
+            st.markdown("---")
+            
+            # ========================================
+            # APPROVE LEADS SECTION
+            # ========================================
+            if 'Donor ID' in df.columns:
+                st.markdown("### Select Prospects to Approve")
                 
-                # Display pending leads
-                display_cols = ['Donor ID', 'Name', 'Organization', 'Email', 'Support Type', 'Reason']
-                available_cols = [col for col in display_cols if col in pending_df.columns]
+                # Select All checkbox
+                col1, col2 = st.columns([1, 5])
+                with col1:
+                    select_all = st.checkbox("Select All", key="select_all_daphne")
+                with col2:
+                    st.markdown("*Check the box to select all prospects at once*")
                 
-                st.dataframe(
-                    pending_df[available_cols],
-                    hide_index=True,
-                    use_container_width=True
-                )
+                # TOP APPROVE BUTTON
+                col1, col2, col3 = st.columns([2, 2, 2])
+                with col1:
+                    if st.button("🔄 Refresh Data", use_container_width=True, key="refresh_top"):
+                        st.cache_data.clear()
+                        st.rerun()
+                with col2:
+                    approve_btn_top = st.button(
+                        "✅ Approve Selected Prospects",
+                        type="primary",
+                        use_container_width=True,
+                        key="approve_top"
+                    )
                 
                 st.markdown("---")
                 
-                # Approval section
-                st.subheader("✅ Approve Prospects")
+                # Display prospects with checkboxes in scrollable container
+                selected_donor_ids = []
                 
-                # Get Donor ID column (handle variations)
-                donor_id_col = "Donor ID" if "Donor ID" in pending_df.columns else "DonorID"
+                # Create scrollable container
+                leads_container = st.container(height=500)
                 
-                if donor_id_col in pending_df.columns:
-                    # Multi-select for leads
-                    donor_options = {
-                        f"{row[donor_id_col]} - {row.get('Name', 'N/A')} ({row.get('Organization', 'N/A')})": row[donor_id_col]
-                        for _, row in pending_df.iterrows()
-                    }
-                    
-                    selected_leads = st.multiselect(
-                        "Select prospects to approve for DIANA outreach:",
-                        options=list(donor_options.keys()),
-                        key="lead_approval_multiselect"
-                    )
-                    
-                    if selected_leads:
-                        st.markdown(f"**{len(selected_leads)} prospect(s) selected**")
+                with leads_container:
+                    for idx, row in df.iterrows():
+                        col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
                         
-                        col1, col2 = st.columns([3, 1])
+                        with col1:
+                            is_selected = st.checkbox(
+                                "✓",
+                                value=select_all,
+                                key=f"donor_check_{idx}",
+                                label_visibility="collapsed"
+                            )
+                            if is_selected:
+                                donor_id = row.get('Donor ID', '')
+                                if donor_id:
+                                    selected_donor_ids.append(donor_id)
                         
                         with col2:
-                            if st.button("✅ Approve Selected", type="primary", use_container_width=True):
-                                # Get the actual Donor IDs
-                                approved_ids = [donor_options[lead] for lead in selected_leads]
+                            st.write(f"**{row.get('Name', 'N/A')}**")
+                        
+                        with col3:
+                            st.write(row.get('Organization', 'N/A'))
+                        
+                        with col4:
+                            email = row.get('Email', 'N/A')
+                            st.write(email[:25] + '...' if len(str(email)) > 25 else email)
+                        
+                        with col5:
+                            st.code(row.get('Donor ID', 'N/A'), language=None)
+                
+                st.markdown("---")
+                
+                # Approval controls
+                col1, col2, col3 = st.columns([2, 2, 2])
+                
+                with col1:
+                    st.metric("Selected", len(selected_donor_ids))
+                
+                with col2:
+                    approve_btn_bottom = st.button(
+                        "✅ Approve Selected Prospects",
+                        type="primary",
+                        use_container_width=True,
+                        disabled=len(selected_donor_ids) == 0,
+                        key="approve_bottom"
+                    )
+                
+                with col3:
+                    if st.button("🔄 Refresh Data", use_container_width=True):
+                        st.cache_data.clear()
+                        st.rerun()
+                
+                # Handle approval from either button
+                if approve_btn_top or approve_btn_bottom:
+                    if selected_donor_ids:
+                        with st.spinner("Sending to DIANA..."):
+                            success, response = send_approved_leads_to_diana(selected_donor_ids)
+                            
+                            if success:
+                                st.success(f"✅ Successfully approved {len(selected_donor_ids)} prospect(s)!")
+                                st.info("🤖 DIANA will send outreach emails shortly.")
                                 
-                                # Send to DIANA
-                                success, response = send_approved_leads_to_diana(approved_ids)
-                                
-                                if success:
-                                    st.success(f"✅ {len(approved_ids)} prospects approved and sent to DIANA!")
-                                    st.cache_data.clear()
-                                    st.rerun()
-                                else:
-                                    st.error(f"❌ Failed to approve prospects: {response}")
-                else:
-                    st.warning("⚠️ Donor ID column not found in data")
+                                # Show approved prospects
+                                with st.expander("View Approved Prospects"):
+                                    for donor_id in selected_donor_ids:
+                                        st.write(f"• {donor_id}")
+                            else:
+                                st.error(f"❌ Failed to send to DIANA: {response}")
+                                st.info("💡 Check that the DIANA webhook is running in n8n")
+                    else:
+                        st.warning("⚠️ Please select at least one prospect to approve")
+            
+            st.markdown("---")
+            
+            # ========================================
+            # SEARCH AND FILTER
+            # ========================================
+            search = st.text_input("🔍 Search prospects by name, email, or organization...")
+            filtered = df.copy()
+            
+            if search:
+                search_lower = search.lower()
+                mask = (
+                    df.get('Name', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
+                    df.get('Email', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
+                    df.get('Organization', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False)
+                )
+                filtered = df[mask]
+            
+            if not filtered.empty:
+                st.markdown(f"**Showing {len(filtered)} of {len(df)} prospects**")
+                st.dataframe(filtered, hide_index=True, use_container_width=True)
             else:
-                st.info("✨ All prospects have been reviewed! No pending approvals.")
-        else:
-            st.warning("⚠️ Status column not found in data")
-    else:
-        st.info("No DAPHNE data available. Check Google Sheets connection.")
+                st.info("No prospects match your search")
 
 elif st.session_state.selected_page == "Manage Tasks":
     # ========================================
