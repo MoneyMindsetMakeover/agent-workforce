@@ -227,7 +227,7 @@ if st.session_state.selected_page == "Dashboard Overview":
 
 elif st.session_state.selected_page == "Approve Leads":
     # ========================================
-    # APPROVE LEADS PAGE (RESTORED ORIGINAL FUNCTIONALITY)
+    # APPROVE LEADS PAGE
     # ========================================
     
     st.header("📧 Approve Donor Prospects for DIANA Outreach")
@@ -297,30 +297,31 @@ elif st.session_state.selected_page == "Approve Leads":
                 
                 st.markdown("---")
                 
-                # SEARCH BAR
-                search = st.text_input("🔍 Search prospects by name, email, or organization...", key="search_filter")
+                # Create scrollable container WITH search inside
+                leads_container = st.container(height=600)
                 
-                # Filter dataframe based on search
-                filtered_df = df.copy()
-                if search:
-                    search_lower = search.lower()
-                    mask = (
-                        df.get('Name', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
-                        df.get('Email', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
-                        df.get('Organization', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False)
-                    )
-                    filtered_df = df[mask]
-                
-                st.markdown(f"**Showing {len(filtered_df)} of {len(df)} prospects**")
-                st.markdown("---")
-                
-                # Display prospects with checkboxes in scrollable container
+                # Track selected donors
                 selected_donor_ids = []
                 
-                # Create scrollable container
-                leads_container = st.container(height=500)
-                
                 with leads_container:
+                    # SEARCH BAR INSIDE CONTAINER
+                    search = st.text_input("🔍 Search prospects by name, email, or organization...", key="search_filter")
+                    
+                    # Filter dataframe based on search
+                    filtered_df = df.copy()
+                    if search:
+                        search_lower = search.lower()
+                        mask = (
+                            df.get('Name', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
+                            df.get('Email', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
+                            df.get('Organization', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False)
+                        )
+                        filtered_df = df[mask]
+                    
+                    st.markdown(f"**Showing {len(filtered_df)} of {len(df)} prospects**")
+                    st.markdown("---")
+                    
+                    # Display prospects with checkboxes
                     for idx, row in filtered_df.iterrows():
                         col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
                         
@@ -393,7 +394,7 @@ elif st.session_state.selected_page == "Approve Leads":
 
 elif st.session_state.selected_page == "Manage Tasks":
     # ========================================
-    # MANAGE TASKS PAGE (OPSI)
+    # MANAGE TASKS PAGE (OPSI) - KEEPING ORIGINAL
     # ========================================
     
     st.subheader("📋 OPSI Task Management")
