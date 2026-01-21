@@ -343,7 +343,7 @@ elif st.session_state.selected_page == "Approve Leads":
                             if is_selected:
                                 donor_id = row.get('Donor ID', '')
                                 if donor_id:
-                                    selected_donor_ids.append(lead_id)
+                                    selected_donor_ids.append(donor_id)
                     
                         with col2:
                             st.write(f"**{row.get('Name', 'N/A')}**")
@@ -392,8 +392,8 @@ elif st.session_state.selected_page == "Approve Leads":
                             
                                 # Show approved leads
                                 with st.expander("View Approved Prospects"):
-                                    for lead_id in selected_donor_ids:
-                                        st.write(f"• {lead_id}")
+                                    for donor_id in selected_donor_ids:
+                                        st.write(f"• {donor_id}")
                             else:
                                 st.error(f"❌ Failed to send to DIANA: {response}")
                                 st.info("💡 Check that the DIANA webhook is running in n8n")
