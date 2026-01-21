@@ -322,6 +322,23 @@ elif st.session_state.selected_page == "Approve Leads":
                     )
             
                 st.markdown("---")
+                
+                # SEARCH BAR - BEFORE SCROLLABLE CONTAINER
+                search = st.text_input("🔍 Search prospects by name, email, or organization...", key="search_filter_approve")
+                
+                # Filter dataframe based on search
+                filtered_df = df.copy()
+                if search:
+                    search_lower = search.lower()
+                    mask = (
+                        df.get('Name', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
+                        df.get('Email', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
+                        df.get('Organization', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False)
+                    )
+                    filtered_df = df[mask]
+                
+                st.markdown(f"**Showing {len(filtered_df)} of {len(df)} prospects**")
+                st.markdown("---")
             
                 # Display leads with checkboxes in container with fixed height
                 selected_donor_ids = []
@@ -330,7 +347,7 @@ elif st.session_state.selected_page == "Approve Leads":
                 leads_container = st.container(height=500)
             
                 with leads_container:
-                    for idx, row in df.iterrows():
+                    for idx, row in filtered_df.iterrows():
                         col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
                     
                         with col1:
