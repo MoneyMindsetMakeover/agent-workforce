@@ -119,7 +119,7 @@ with st.sidebar:
 # ========================================
 
 # Header
-st.markdown('<p class="main-header" style="color: #2E7D32;">💰 Money Mindset Makeover Multi-Agent Command Center</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header" style="color: #ffffff;">💰 Money Mindset Makeover</p>', unsafe_allow_html=True)
 st.markdown("**Your AI-Powered Business Operations Platform**")
 st.markdown("---")
 
@@ -136,7 +136,7 @@ if st.session_state.selected_page == "Dashboard Overview":
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        status_badge = f'<span class="{status_class_map.get(cora_status, "status-offline")}">{cora_status.upper()}</span>'
+        status_badge = f'<span class="{status_class_map.get(daphne_status, "status-offline")}">{cora_status.upper()}</span>'
         st.markdown(f"""
         <div class="agent-card">
             <h3>🎯 DAPHNE</h3>
@@ -148,7 +148,7 @@ if st.session_state.selected_page == "Dashboard Overview":
         """, unsafe_allow_html=True)
     
     with col2:
-        status_badge = f'<span class="{status_class_map.get(mark_status, "status-offline")}">{mark_status.upper()}</span>'
+        status_badge = f'<span class="{status_class_map.get(diana_status, "status-offline")}">{mark_status.upper()}</span>'
         st.markdown(f"""
         <div class="agent-card">
             <h3>💬 DIANA</h3>
@@ -181,7 +181,7 @@ if st.session_state.selected_page == "Dashboard Overview":
     opsi_tasks = load_opsi_tasks()
     
     with col1:
-        st.metric("Total Leads", len(daphne_leads))
+        st.metric("Pending Review", len(daphne_leads))
     
     with col2:
         qualified = sum(1 for lead in daphne_leads if lead.get('Status') == 'Qualified')
@@ -262,7 +262,7 @@ elif st.session_state.selected_page == "Approve Leads":
     df = load_daphne_data()
     
     if df.empty:
-        st.info("No donor prospects available. Run DAPHNE to generate prospects.")
+        st.info("No donor prospects available. Run DAPHNE to generate leads.")
     else:
         # Filter for "pending review" status
         status_col = "Status" if "Status" in df.columns else "status"
@@ -270,9 +270,9 @@ elif st.session_state.selected_page == "Approve Leads":
             # Accept "pending review" status from n8n workflow
             df = df[df[status_col].str.lower().str.strip() == 'pending review']
         
-            if df.empty:
-                st.info("✨ All prospects have been reviewed! No pending approvals.")
-            else:
+        if df.empty:
+            st.info("✨ All prospects have been reviewed! No pending approvals.")
+        else:
             # Metrics
             col1, col2, col3, col4 = st.columns(4)
         
@@ -285,11 +285,11 @@ elif st.session_state.selected_page == "Approve Leads":
                 st.metric("Today", today_count)
         
             with col3:
-                foundations = df["Donor Type"].str.contains("Foundation", case=False, na=False).sum() if "organization" in df.columns else 0
+                foundations = df.get("Donor Type", pd.Series(dtype="str")).str.contains("Foundation", case=False, na=False).sum() if "organization" in df.columns else 0
                 st.metric("Foundations", foundations)
         
             with col4:
-                corporates = df["Donor Type"].str.contains("Corporate", case=False, na=False).sum() if "organization" in df.columns else 0
+                corporates = df.get("Donor Type", pd.Series(dtype="str")).str.contains("Corporate", case=False, na=False).sum() if "organization" in df.columns else 0
                 st.metric("Corporates", corporates)
         
             st.markdown("---")
@@ -305,7 +305,7 @@ elif st.session_state.selected_page == "Approve Leads":
                 with col1:
                     select_all = st.checkbox("Select All", key="select_all_daphne")
                 with col2:
-                    st.markdown("*Check the box to select all leads at once*")
+                    st.markdown("*Check the box to select all prospects at once*")
             
                 # TOP APPROVE BUTTON
                 col1, col2, col3 = st.columns([2, 2, 2])
@@ -343,7 +343,7 @@ elif st.session_state.selected_page == "Approve Leads":
                             if is_selected:
                                 donor_id = row.get('Donor ID', '')
                                 if donor_id:
-                                    selected_donor_ids.append(donor_id)
+                                    selected_donor_ids.append(lead_id)
                     
                         with col2:
                             st.write(f"**{row.get('Name', 'N/A')}**")
@@ -384,7 +384,7 @@ elif st.session_state.selected_page == "Approve Leads":
                 if approve_btn_top or approve_btn_bottom:
                     if selected_donor_ids:
                         with st.spinner("Sending to MARK..."):
-                            success, response = send_approved_leads_to_mark(selected_lead_ids)
+                            success, response = send_approved_leads_to_diana(selected_donor_ids)
                         
                             if success:
                                 st.success(f"✅ Successfully approved {len(selected_donor_ids)} prospect(s)!")
@@ -392,8 +392,8 @@ elif st.session_state.selected_page == "Approve Leads":
                             
                                 # Show approved leads
                                 with st.expander("View Approved Prospects"):
-                                    for lead_id in selected_lead_ids:
-                                        st.write(f"• {donor_id}")
+                                    for lead_id in selected_donor_ids:
+                                        st.write(f"• {lead_id}")
                             else:
                                 st.error(f"❌ Failed to send to DIANA: {response}")
                                 st.info("💡 Check that the DIANA webhook is running in n8n")
@@ -405,36 +405,36 @@ elif st.session_state.selected_page == "Approve Leads":
             # ========================================
             # SEARCH AND FILTER
             # ========================================
-            search = st.text_input("🔍 Search prospects by name, email, or organization...")
-            filtered = df.copy()
+        search = st.text_input("🔍 Search prospects by name, email, or organization...")
+        filtered = df.copy()
         
-            if search:
-                mask = (
-                    df["name"].str.contains(search, case=False, na=False) |
-                    df["email"].str.contains(search, case=False, na=False) |
-                    df["organization"].str.contains(search, case=False, na=False)
-                )
-                filtered = df[mask]
+        if search:
+            mask = (
+                df["name"].str.contains(search, case=False, na=False) |
+                df["email"].str.contains(search, case=False, na=False) |
+                df["organization"].str.contains(search, case=False, na=False)
+            )
+            filtered = df[mask]
         
-            # ========================================
-            # LEADS TABLE
-            # ========================================
-            st.subheader(f"All Leads ({len(filtered)})")
+        # ========================================
+        # LEADS TABLE
+        # ========================================
+        st.subheader(f"All Leads ({len(filtered)})")
         
-            if not filtered.empty:
-                st.dataframe(filtered, use_container_width=True, hide_index=True)
+        if not filtered.empty:
+            st.dataframe(filtered, use_container_width=True, hide_index=True)
             
-                # Export button
-                csv = filtered.to_csv(index=False)
-                st.download_button(
-                    "📥 Export to CSV",
-                    csv,
-                    f"cora_leads_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                    "text/csv",
-                    use_container_width=False
-                )
-            else:
-                st.info("No leads match your search criteria.")
+            # Export button
+            csv = filtered.to_csv(index=False)
+            st.download_button(
+                "📥 Export to CSV",
+                csv,
+                f"cora_leads_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                "text/csv",
+                use_container_width=False
+            )
+        else:
+            st.info("No prospects match your search criteria.")
 
 elif st.session_state.selected_page == "Manage Tasks":
     # ========================================
