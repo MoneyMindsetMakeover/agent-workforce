@@ -204,10 +204,10 @@ if st.session_state.selected_page == "Dashboard Overview":
         st.markdown("### 📊 Recent Leads")
         if daphne_leads:
             recent_df = pd.DataFrame(daphne_leads).head(5)
-            st.dataframe(recent_df, use_container_width=True, hide_index=True)
+            st.dataframe(recent_df, width="stretch", hide_index=True)
             
             # Add Approve Leads button
-            if st.button("Approve Leads", use_container_width=True, type="primary"):
+            if st.button("Approve Leads", width="stretch", type="primary"):
                 st.session_state.selected_page = "Approve Leads"
                 st.rerun()
         else:
@@ -241,7 +241,7 @@ if st.session_state.selected_page == "Dashboard Overview":
                         
                         with col_b:
                             # Navigate to Manage Tasks button
-                            if st.button("Start", key=f"quick_start_{idx}", help="Go to Manage Tasks", use_container_width=True):
+                            if st.button("Start", key=f"quick_start_{idx}", help="Go to Manage Tasks", width="stretch"):
                                 st.session_state.selected_page = "Manage Tasks"
                                 st.rerun()
                         
@@ -311,17 +311,17 @@ elif st.session_state.selected_page == "Approve Leads":
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
-                if st.button("🔄 Refresh Data", use_container_width=True, key="refresh_top"):
+                if st.button("🔄 Refresh Data", width="stretch", key="refresh_top"):
                     st.cache_data.clear()
-                    if 'select_all_state' in st.session_state:
-                        st.session_state.select_all_state = False
+                    if 'selected_prospects' in st.session_state:
+                        st.session_state.selected_prospects = set()
                     st.rerun()
             
             with col2:
                 approve_btn_top = st.button(
                     "✅ Approve Selected Prospects",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                     key="approve_top"
                 )
             
@@ -334,14 +334,14 @@ elif st.session_state.selected_page == "Approve Leads":
                         csv,
                         f"prospects_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                         "text/csv",
-                        use_container_width=True
+                        width="stretch"
                     )
             
             st.markdown("---")
             
-            # Initialize session state for select all
-            if 'select_all_state' not in st.session_state:
-                st.session_state.select_all_state = False
+            # Initialize session state for selections
+            if 'selected_prospects' not in st.session_state:
+                st.session_state.selected_prospects = set()
             
             # Display leads with checkboxes in container with fixed height
             selected_donor_ids = []
@@ -354,16 +354,32 @@ elif st.session_state.selected_page == "Approve Leads":
                 col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
                 
                 with col1:
-                    # Select All checkbox with proper callback
-                    def toggle_select_all():
-                        st.session_state.select_all_state = st.session_state.select_all_checkbox
+                    # Get all donor IDs from filtered dataframe
+                    all_donor_ids = set()
+                    for _, row in filtered_df.iterrows():
+                        donor_id = row.get('Donor ID') or row.get('Lead ID', '')
+                        if donor_id:
+                            all_donor_ids.add(donor_id)
                     
+                    # Check if all visible prospects are selected
+                    all_selected = all_donor_ids.issubset(st.session_state.selected_prospects) if all_donor_ids else False
+                    
+                    # Select All checkbox
                     select_all = st.checkbox(
                         "Select All",
-                        value=st.session_state.select_all_state,
-                        key="select_all_checkbox",
-                        on_change=toggle_select_all
+                        value=all_selected,
+                        key="select_all_checkbox"
                     )
+                    
+                    # Handle Select All toggle
+                    if select_all and not all_selected:
+                        # User just checked Select All - add all visible prospects
+                        st.session_state.selected_prospects.update(all_donor_ids)
+                        st.rerun()
+                    elif not select_all and all_selected:
+                        # User just unchecked Select All - remove all visible prospects
+                        st.session_state.selected_prospects -= all_donor_ids
+                        st.rerun()
                 
                 with col2:
                     st.markdown("**Name**")
@@ -382,19 +398,34 @@ elif st.session_state.selected_page == "Approve Leads":
                 
                 # DATA ROWS
                 for idx, row in filtered_df.iterrows():
+                    donor_id = row.get('Donor ID') or row.get('Lead ID', '')
+                    
                     col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
                     
                     with col1:
-                        is_selected = st.checkbox(
+                        # Check if this prospect is in the selected set
+                        is_checked = donor_id in st.session_state.selected_prospects if donor_id else False
+                        
+                        checkbox_changed = st.checkbox(
                             "✓",
-                            value=st.session_state.select_all_state,
-                            key=f"prospect_check_{idx}",
+                            value=is_checked,
+                            key=f"prospect_check_{donor_id}_{idx}",
                             label_visibility="collapsed"
                         )
-                        if is_selected:
-                            donor_id = row.get('Donor ID') or row.get('Lead ID', '')
+                        
+                        # Update session state based on checkbox
+                        if checkbox_changed and not is_checked:
+                            # User just checked this box
                             if donor_id:
-                                selected_donor_ids.append(donor_id)
+                                st.session_state.selected_prospects.add(donor_id)
+                        elif not checkbox_changed and is_checked:
+                            # User just unchecked this box
+                            if donor_id:
+                                st.session_state.selected_prospects.discard(donor_id)
+                        
+                        # Add to current selection list
+                        if donor_id in st.session_state.selected_prospects:
+                            selected_donor_ids.append(donor_id)
                     
                     with col2:
                         st.write(f"**{row.get('Name', 'N/A')}**")
@@ -421,13 +452,13 @@ elif st.session_state.selected_page == "Approve Leads":
                 approve_btn_bottom = st.button(
                     "✅ Approve Selected Leads",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                     disabled=len(selected_donor_ids) == 0,
                     key="approve_bottom"
                 )
             
             with col3:
-                if st.button("🔄 Refresh Data", use_container_width=True):
+                if st.button("🔄 Refresh Data", width="stretch"):
                     st.cache_data.clear()
                     st.rerun()
             
@@ -440,6 +471,9 @@ elif st.session_state.selected_page == "Approve Leads":
                         if success:
                             st.success(f"✅ Successfully approved {len(selected_donor_ids)} prospect(s)!")
                             st.info("🤖 DIANA will send outreach emails shortly.")
+                            
+                            # Clear selections after successful approval
+                            st.session_state.selected_prospects = set()
                             
                             # Show approved leads
                             with st.expander("View Approved Leads"):
@@ -473,7 +507,7 @@ elif st.session_state.selected_page == "Approve Leads":
         st.subheader(f"All Leads ({len(filtered)})")
         
         if not filtered.empty:
-            st.dataframe(filtered, use_container_width=True, hide_index=True)
+            st.dataframe(filtered, width="stretch", hide_index=True)
             
             # Export button
             csv = filtered.to_csv(index=False)
@@ -482,7 +516,7 @@ elif st.session_state.selected_page == "Approve Leads":
                 csv,
                 f"daphne_leads_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 "text/csv",
-                use_container_width=False
+                width="content"
             )
         else:
             st.info("No leads match your search criteria.")
@@ -754,7 +788,7 @@ elif st.session_state.selected_page == "Manage Tasks":
                             key=f"update_notes_{selected_task_id}"
                         )
                         
-                        if st.button("💾 Update Task", type="primary", use_container_width=True, key=f"update_btn_{selected_task_id}"):
+                        if st.button("💾 Update Task", type="primary", width="stretch", key=f"update_btn_{selected_task_id}"):
                             update_data = {
                                 "taskId": selected_task_id,
                                 "taskType": task_row.get('Task Type', 'RFP Submission'),
@@ -811,7 +845,7 @@ elif st.session_state.selected_page == "Manage Tasks":
             )
             filtered_tasks = opsi_df[mask]
         
-        st.dataframe(filtered_tasks, hide_index=True, use_container_width=True)
+        st.dataframe(filtered_tasks, hide_index=True, width="stretch")
     else:
         st.info("No tasks found. Create your first task above.")
 
