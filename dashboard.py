@@ -313,6 +313,8 @@ elif st.session_state.selected_page == "Approve Leads":
             with col1:
                 if st.button("🔄 Refresh Data", use_container_width=True, key="refresh_top"):
                     st.cache_data.clear()
+                    if 'select_all_state' in st.session_state:
+                        st.session_state.select_all_state = False
                     st.rerun()
             
             with col2:
@@ -337,6 +339,10 @@ elif st.session_state.selected_page == "Approve Leads":
             
             st.markdown("---")
             
+            # Initialize session state for select all
+            if 'select_all_state' not in st.session_state:
+                st.session_state.select_all_state = False
+            
             # Display leads with checkboxes in container with fixed height
             selected_donor_ids = []
             
@@ -348,10 +354,15 @@ elif st.session_state.selected_page == "Approve Leads":
                 col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
                 
                 with col1:
+                    # Select All checkbox with proper callback
+                    def toggle_select_all():
+                        st.session_state.select_all_state = st.session_state.select_all_checkbox
+                    
                     select_all = st.checkbox(
-                        "✓",
-                        key="select_all_prospects",
-                        help="Select all visible prospects"
+                        "Select All",
+                        value=st.session_state.select_all_state,
+                        key="select_all_checkbox",
+                        on_change=toggle_select_all
                     )
                 
                 with col2:
@@ -376,7 +387,7 @@ elif st.session_state.selected_page == "Approve Leads":
                     with col1:
                         is_selected = st.checkbox(
                             "✓",
-                            value=select_all,
+                            value=st.session_state.select_all_state,
                             key=f"prospect_check_{idx}",
                             label_visibility="collapsed"
                         )
