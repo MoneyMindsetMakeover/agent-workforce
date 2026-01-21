@@ -181,15 +181,17 @@ if st.session_state.selected_page == "Dashboard Overview":
     opsi_tasks = load_opsi_tasks()
     
     with col1:
-        st.metric("Pending Review", len(daphne_leads))
+        # Count only "pending review" to match Approve Leads page
+        pending_review = sum(1 for lead in daphne_leads if str(lead.get('Status', '')).lower().strip() == 'pending review')
+        st.metric("Pending Review", pending_review)
     
     with col2:
-        qualified = sum(1 for lead in daphne_leads if lead.get('Status') == 'Qualified')
-        st.metric("Qualified Leads", qualified)
+        approved = sum(1 for lead in daphne_leads if str(lead.get('Status', '')).lower() == 'approved')
+        st.metric("Approved Prospects", approved)
     
     with col3:
-        contacted = sum(1 for lead in daphne_leads if lead.get('Status') == 'Contacted')
-        st.metric("Contacted", contacted)
+        total = len(daphne_leads)
+        st.metric("Total Prospects", total)
     
     with col4:
         pending_tasks = len([t for t in opsi_tasks.to_dict('records') if t.get('Status') == 'New' or t.get('Status ') == 'New']) if not opsi_tasks.empty else 0
@@ -322,7 +324,8 @@ elif st.session_state.selected_page == "Approve Leads":
                     )
             
                 st.markdown("---")
-                
+            
+
                 # SEARCH BAR - BEFORE SCROLLABLE CONTAINER
                 search = st.text_input("🔍 Search prospects by name, email, or organization...", key="search_filter_approve")
                 
@@ -339,7 +342,7 @@ elif st.session_state.selected_page == "Approve Leads":
                 
                 st.markdown(f"**Showing {len(filtered_df)} of {len(df)} prospects**")
                 st.markdown("---")
-            
+                
                 # Display leads with checkboxes in container with fixed height
                 selected_donor_ids = []
             
@@ -420,39 +423,6 @@ elif st.session_state.selected_page == "Approve Leads":
             st.markdown("---")
         
             # ========================================
-            # SEARCH AND FILTER
-            # ========================================
-        search = st.text_input("🔍 Search prospects by name, email, or organization...")
-        filtered = df.copy()
-        
-        if search:
-            mask = (
-                df["name"].str.contains(search, case=False, na=False) |
-                df["email"].str.contains(search, case=False, na=False) |
-                df["organization"].str.contains(search, case=False, na=False)
-            )
-            filtered = df[mask]
-        
-        # ========================================
-        # LEADS TABLE
-        # ========================================
-        st.subheader(f"All Leads ({len(filtered)})")
-        
-        if not filtered.empty:
-            st.dataframe(filtered, use_container_width=True, hide_index=True)
-            
-            # Export button
-            csv = filtered.to_csv(index=False)
-            st.download_button(
-                "📥 Export to CSV",
-                csv,
-                f"cora_leads_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                "text/csv",
-                use_container_width=False
-            )
-        else:
-            st.info("No prospects match your search criteria.")
-
 elif st.session_state.selected_page == "Manage Tasks":
     # ========================================
     # MANAGE TASKS PAGE (OPSI)
