@@ -136,7 +136,7 @@ if st.session_state.selected_page == "Dashboard Overview":
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        status_badge = f'<span class="{status_class_map.get(daphne_status, "status-offline")}">{cora_status.upper()}</span>'
+        status_badge = f'<span class="{status_class_map.get(daphne_status, "status-offline")}">{daphne_status.upper()}</span>'
         st.markdown(f"""
         <div class="agent-card">
             <h3>🎯 DAPHNE</h3>
@@ -148,7 +148,7 @@ if st.session_state.selected_page == "Dashboard Overview":
         """, unsafe_allow_html=True)
     
     with col2:
-        status_badge = f'<span class="{status_class_map.get(diana_status, "status-offline")}">{mark_status.upper()}</span>'
+        status_badge = f'<span class="{status_class_map.get(diana_status, "status-offline")}">{diana_status.upper()}</span>'
         st.markdown(f"""
         <div class="agent-card">
             <h3>💬 DIANA</h3>
