@@ -307,19 +307,14 @@ elif st.session_state.selected_page == "Approve Leads":
             
             st.markdown(f"**Showing {len(filtered_df)} of {len(df)} prospects**")
             
-            # Select All checkbox
-            col1, col2 = st.columns([1, 5])
-            with col1:
-                select_all = st.checkbox("Select All", key="select_all_prospects")
-            with col2:
-                st.markdown("*Check the box to select all visible prospects*")
-            
-            # TOP APPROVE BUTTON
+            # Button row (without Select All)
             col1, col2, col3 = st.columns([2, 2, 2])
+            
             with col1:
                 if st.button("🔄 Refresh Data", use_container_width=True, key="refresh_top"):
                     st.cache_data.clear()
                     st.rerun()
+            
             with col2:
                 approve_btn_top = st.button(
                     "✅ Approve Selected Prospects",
@@ -327,6 +322,7 @@ elif st.session_state.selected_page == "Approve Leads":
                     use_container_width=True,
                     key="approve_top"
                 )
+            
             with col3:
                 # CSV Download button
                 if len(filtered_df) > 0:
@@ -348,6 +344,32 @@ elif st.session_state.selected_page == "Approve Leads":
             leads_container = st.container(height=500)
             
             with leads_container:
+                # HEADER ROW with Select All checkbox
+                col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
+                
+                with col1:
+                    select_all = st.checkbox(
+                        "✓",
+                        key="select_all_prospects",
+                        help="Select all visible prospects"
+                    )
+                
+                with col2:
+                    st.markdown("**Name**")
+                
+                with col3:
+                    st.markdown("**Organization**")
+                
+                with col4:
+                    st.markdown("**Email**")
+                
+                with col5:
+                    st.markdown("**Donor ID**")
+                
+                # Separator line
+                st.markdown("---")
+                
+                # DATA ROWS
                 for idx, row in filtered_df.iterrows():
                     col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
                     
@@ -360,7 +382,7 @@ elif st.session_state.selected_page == "Approve Leads":
                         )
                         if is_selected:
                             donor_id = row.get('Donor ID') or row.get('Lead ID', '')
-                            if lead_id:
+                            if donor_id:
                                 selected_donor_ids.append(donor_id)
                     
                     with col2:
