@@ -1,17 +1,17 @@
 import streamlit as st
 from datetime import datetime
 import pandas as pd
-from cora import get_cora_status, get_cora_leads
-from mark import get_mark_status
+from daphne import get_daphne_status, get_daphne_leads
+from diana import get_diana_status
 from opsi import get_opsi_status, load_opsi_tasks
-from utils import load_cora_data, send_approved_leads_to_mark, load_opsi_data, send_opsi_task, update_opsi_task
+from utils import load_daphne_data, send_approved_leads_to_diana, load_opsi_data, send_opsi_task, update_opsi_task
 
 # ========================================
 # PAGE CONFIGURATION
 # ========================================
 st.set_page_config(
-    page_title="ApexxAdams Command Center",
-    page_icon="⚡",
+    page_title="Money Mindset Makeover - Multi-Agent Command Center",
+    page_icon="💰",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -71,7 +71,7 @@ st.markdown("""
 # SIDEBAR NAVIGATION
 # ========================================
 with st.sidebar:
-    st.markdown("### ⚡ ApexxAdams")
+    st.markdown("### 💰 Money Mindset Makeover")
     st.markdown("**Multi-Agent Command Center**")
     st.markdown("---")
     
@@ -96,8 +96,8 @@ with st.sidebar:
     st.markdown("### 📊 System Status")
     
     # Get agent statuses dynamically
-    cora_status = get_cora_status()
-    mark_status = get_mark_status()
+    daphne_status = get_daphne_status()
+    diana_status = get_diana_status()
     opsi_status = get_opsi_status()
     
     # Map status to CSS class
@@ -107,8 +107,8 @@ with st.sidebar:
         "Offline": "status-offline"
     }
     
-    st.markdown(f'<span class="{status_class_map.get(cora_status, "status-offline")}">● CORA: {cora_status}</span>', unsafe_allow_html=True)
-    st.markdown(f'<span class="{status_class_map.get(mark_status, "status-offline")}">● MARK: {mark_status}</span>', unsafe_allow_html=True)
+    st.markdown(f'<span class="{status_class_map.get(daphne_status, "status-offline")}">● DAPHNE: {daphne_status}</span>', unsafe_allow_html=True)
+    st.markdown(f'<span class="{status_class_map.get(diana_status, "status-offline")}">● DIANA: {diana_status}</span>', unsafe_allow_html=True)
     st.markdown(f'<span class="{status_class_map.get(opsi_status, "status-offline")}">● OPSI: {opsi_status}</span>', unsafe_allow_html=True)
     
     st.markdown("---")
@@ -136,10 +136,10 @@ if st.session_state.selected_page == "Dashboard Overview":
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        status_badge = f'<span class="{status_class_map.get(cora_status, "status-offline")}">{cora_status.upper()}</span>'
+        status_badge = f'<span class="{status_class_map.get(daphne_status, "status-offline")}">{daphne_status.upper()}</span>'
         st.markdown(f"""
         <div class="agent-card">
-            <h3>🎯 CORA</h3>
+            <h3>🎯 DAPHNE</h3>
             <p>Community Outreach & Research Assistant</p>
             <div style="margin-top: 1rem;">
                 {status_badge}
@@ -148,10 +148,10 @@ if st.session_state.selected_page == "Dashboard Overview":
         """, unsafe_allow_html=True)
     
     with col2:
-        status_badge = f'<span class="{status_class_map.get(mark_status, "status-offline")}">{mark_status.upper()}</span>'
+        status_badge = f'<span class="{status_class_map.get(diana_status, "status-offline")}">{diana_status.upper()}</span>'
         st.markdown(f"""
         <div class="agent-card">
-            <h3>📧 MARK</h3>
+            <h3>📧 DIANA</h3>
             <p>Marketing & Research Knowledge</p>
             <div style="margin-top: 1rem;">
                 {status_badge}
@@ -177,18 +177,18 @@ if st.session_state.selected_page == "Dashboard Overview":
     col1, col2, col3, col4 = st.columns(4)
     
     # Get data from agents
-    cora_leads = get_cora_leads()
+    daphne_leads = get_daphne_leads()
     opsi_tasks = load_opsi_tasks()
     
     with col1:
-        st.metric("Total Leads", len(cora_leads))
+        st.metric("Total Leads", len(daphne_leads))
     
     with col2:
-        qualified = sum(1 for lead in cora_leads if lead.get('Status') == 'Qualified')
+        qualified = sum(1 for lead in daphne_leads if lead.get('Status') == 'Qualified')
         st.metric("Qualified Leads", qualified)
     
     with col3:
-        contacted = sum(1 for lead in cora_leads if lead.get('Status') == 'Contacted')
+        contacted = sum(1 for lead in daphne_leads if lead.get('Status') == 'Contacted')
         st.metric("Contacted", contacted)
     
     with col4:
@@ -202,8 +202,8 @@ if st.session_state.selected_page == "Dashboard Overview":
     
     with col1:
         st.markdown("### 📊 Recent Leads")
-        if cora_leads:
-            recent_df = pd.DataFrame(cora_leads).head(5)
+        if daphne_leads:
+            recent_df = pd.DataFrame(daphne_leads).head(5)
             st.dataframe(recent_df, use_container_width=True, hide_index=True)
             
             # Add Approve Leads button
@@ -211,7 +211,7 @@ if st.session_state.selected_page == "Dashboard Overview":
                 st.session_state.selected_page = "Approve Leads"
                 st.rerun()
         else:
-            st.info("No recent leads. Run CORA to generate leads.")
+            st.info("No recent leads. Run DAPHNE to generate leads.")
     
     with col2:
         st.markdown("### 🔥 High Priority Pending Tasks")
@@ -257,12 +257,12 @@ elif st.session_state.selected_page == "Approve Leads":
     # ========================================
     
     st.header("📧 Approve Leads for Outreach")
-    st.write("Review and approve leads for MARK to send outreach emails")
+    st.write("Review and approve leads for DIANA to send outreach emails")
     
-    df = load_cora_data()
+    df = load_daphne_data()
     
     if df.empty:
-        st.info("No leads available. Run CORA to generate leads.")
+        st.info("No leads available. Run DAPHNE to generate leads.")
     else:
         # Metrics
         col1, col2, col3, col4 = st.columns(4)
@@ -401,20 +401,20 @@ elif st.session_state.selected_page == "Approve Leads":
             # Handle approval from either button
             if approve_btn_top or approve_btn_bottom:
                 if selected_donor_ids:
-                    with st.spinner("Sending to MARK..."):
+                    with st.spinner("Sending to DIANA..."):
                         success, response = send_approved_leads_to_diana(selected_donor_ids)
                         
                         if success:
                             st.success(f"✅ Successfully approved {len(selected_donor_ids)} prospect(s)!")
-                            st.info("🤖 MARK will send outreach emails shortly.")
+                            st.info("🤖 DIANA will send outreach emails shortly.")
                             
                             # Show approved leads
                             with st.expander("View Approved Leads"):
                                 for donor_id in selected_donor_ids:
                                     st.write(f"• {donor_id}")
                         else:
-                            st.error(f"❌ Failed to send to MARK: {response}")
-                            st.info("💡 Check that the MARK webhook is running in n8n")
+                            st.error(f"❌ Failed to send to DIANA: {response}")
+                            st.info("💡 Check that the DIANA webhook is running in n8n")
                 else:
                     st.warning("⚠️ Please select at least one lead to approve")
         
@@ -447,7 +447,7 @@ elif st.session_state.selected_page == "Approve Leads":
             st.download_button(
                 "📥 Export to CSV",
                 csv,
-                f"cora_leads_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                f"daphne_leads_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 "text/csv",
                 use_container_width=False
             )
@@ -790,7 +790,7 @@ st.markdown(
     f"""
     <div style='text-align: center; color: #666; padding: 1rem;'>
         <p><strong>ApexxAdams Multi-Agent Command Center</strong></p>
-        <p>CORA | MARK | OPSI | Last updated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+        <p>DAPHNE | DIANA | OPSI | Last updated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
     </div>
     """,
     unsafe_allow_html=True
