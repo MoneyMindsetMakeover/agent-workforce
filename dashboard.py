@@ -1,17 +1,17 @@
 import streamlit as st
 from datetime import datetime
 import pandas as pd
-from daphne import get_daphne_status, get_daphne_leads
-from diana import get_diana_status
+from cora import get_cora_status, get_cora_leads
+from mark import get_mark_status
 from opsi import get_opsi_status, load_opsi_tasks
-from utils import load_daphne_data, send_approved_leads_to_diana, load_opsi_data, send_opsi_task, update_opsi_task
+from utils import load_cora_data, send_approved_leads_to_mark, load_opsi_data, send_opsi_task, update_opsi_task
 
 # ========================================
 # PAGE CONFIGURATION
 # ========================================
 st.set_page_config(
-    page_title="Money Mindset Makeover - Multi-Agent Command Center",
-    page_icon="💰",
+    page_title="ApexxAdams Command Center",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -71,7 +71,7 @@ st.markdown("""
 # SIDEBAR NAVIGATION
 # ========================================
 with st.sidebar:
-    st.markdown("### 💰 Money Mindset Makeover")
+    st.markdown("### ⚡ ApexxAdams")
     st.markdown("**Multi-Agent Command Center**")
     st.markdown("---")
     
@@ -96,8 +96,8 @@ with st.sidebar:
     st.markdown("### 📊 System Status")
     
     # Get agent statuses dynamically
-    daphne_status = get_daphne_status()
-    diana_status = get_diana_status()
+    cora_status = get_cora_status()
+    mark_status = get_mark_status()
     opsi_status = get_opsi_status()
     
     # Map status to CSS class
@@ -107,8 +107,8 @@ with st.sidebar:
         "Offline": "status-offline"
     }
     
-    st.markdown(f'<span class="{status_class_map.get(daphne_status, "status-offline")}">● DAPHNE: {daphne_status}</span>', unsafe_allow_html=True)
-    st.markdown(f'<span class="{status_class_map.get(diana_status, "status-offline")}">● DIANA: {diana_status}</span>', unsafe_allow_html=True)
+    st.markdown(f'<span class="{status_class_map.get(cora_status, "status-offline")}">● CORA: {cora_status}</span>', unsafe_allow_html=True)
+    st.markdown(f'<span class="{status_class_map.get(mark_status, "status-offline")}">● MARK: {mark_status}</span>', unsafe_allow_html=True)
     st.markdown(f'<span class="{status_class_map.get(opsi_status, "status-offline")}">● OPSI: {opsi_status}</span>', unsafe_allow_html=True)
     
     st.markdown("---")
@@ -136,10 +136,10 @@ if st.session_state.selected_page == "Dashboard Overview":
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        status_badge = f'<span class="{status_class_map.get(daphne_status, "status-offline")}">{daphne_status.upper()}</span>'
+        status_badge = f'<span class="{status_class_map.get(cora_status, "status-offline")}">{cora_status.upper()}</span>'
         st.markdown(f"""
         <div class="agent-card">
-            <h3>🎯 DAPHNE</h3>
+            <h3>🎯 CORA</h3>
             <p>Community Outreach & Research Assistant</p>
             <div style="margin-top: 1rem;">
                 {status_badge}
@@ -148,10 +148,10 @@ if st.session_state.selected_page == "Dashboard Overview":
         """, unsafe_allow_html=True)
     
     with col2:
-        status_badge = f'<span class="{status_class_map.get(diana_status, "status-offline")}">{diana_status.upper()}</span>'
+        status_badge = f'<span class="{status_class_map.get(mark_status, "status-offline")}">{mark_status.upper()}</span>'
         st.markdown(f"""
         <div class="agent-card">
-            <h3>📧 DIANA</h3>
+            <h3>📧 MARK</h3>
             <p>Marketing & Research Knowledge</p>
             <div style="margin-top: 1rem;">
                 {status_badge}
@@ -177,18 +177,18 @@ if st.session_state.selected_page == "Dashboard Overview":
     col1, col2, col3, col4 = st.columns(4)
     
     # Get data from agents
-    daphne_leads = get_daphne_leads()
+    cora_leads = get_cora_leads()
     opsi_tasks = load_opsi_tasks()
     
     with col1:
-        st.metric("Total Leads", len(daphne_leads))
+        st.metric("Total Leads", len(cora_leads))
     
     with col2:
-        qualified = sum(1 for lead in daphne_leads if lead.get('Status') == 'Qualified')
+        qualified = sum(1 for lead in cora_leads if lead.get('Status') == 'Qualified')
         st.metric("Qualified Leads", qualified)
     
     with col3:
-        contacted = sum(1 for lead in daphne_leads if lead.get('Status') == 'Contacted')
+        contacted = sum(1 for lead in cora_leads if lead.get('Status') == 'Contacted')
         st.metric("Contacted", contacted)
     
     with col4:
@@ -202,16 +202,16 @@ if st.session_state.selected_page == "Dashboard Overview":
     
     with col1:
         st.markdown("### 📊 Recent Leads")
-        if daphne_leads:
-            recent_df = pd.DataFrame(daphne_leads).head(5)
-            st.dataframe(recent_df, width="stretch", hide_index=True)
+        if cora_leads:
+            recent_df = pd.DataFrame(cora_leads).head(5)
+            st.dataframe(recent_df, use_container_width=True, hide_index=True)
             
             # Add Approve Leads button
-            if st.button("Approve Leads", width="stretch", type="primary"):
+            if st.button("Approve Leads", use_container_width=True, type="primary"):
                 st.session_state.selected_page = "Approve Leads"
                 st.rerun()
         else:
-            st.info("No recent leads. Run DAPHNE to generate leads.")
+            st.info("No recent leads. Run CORA to generate leads.")
     
     with col2:
         st.markdown("### 🔥 High Priority Pending Tasks")
@@ -241,7 +241,7 @@ if st.session_state.selected_page == "Dashboard Overview":
                         
                         with col_b:
                             # Navigate to Manage Tasks button
-                            if st.button("Start", key=f"quick_start_{idx}", help="Go to Manage Tasks", width="stretch"):
+                            if st.button("Start", key=f"quick_start_{idx}", help="Go to Manage Tasks", use_container_width=True):
                                 st.session_state.selected_page = "Manage Tasks"
                                 st.rerun()
                         
@@ -257,12 +257,12 @@ elif st.session_state.selected_page == "Approve Leads":
     # ========================================
     
     st.header("📧 Approve Leads for Outreach")
-    st.write("Review and approve leads for DIANA to send outreach emails")
+    st.write("Review and approve leads for MARK to send outreach emails")
     
-    df = load_daphne_data()
+    df = load_cora_data()
     
     if df.empty:
-        st.info("No leads available. Run DAPHNE to generate leads.")
+        st.info("No leads available. Run CORA to generate leads.")
     else:
         # Metrics
         col1, col2, col3, col4 = st.columns(4)
@@ -288,144 +288,53 @@ elif st.session_state.selected_page == "Approve Leads":
         # ========================================
         # APPROVE LEADS SECTION
         # ========================================
-        if 'Donor ID' in df.columns or 'Lead ID' in df.columns:
-            st.markdown("### Select Prospects to Approve")
+        if 'Lead ID' in df.columns:
+            st.markdown("### Select Leads to Approve")
             
-            # Search filter FIRST
-            search_approve = st.text_input("🔍 Search prospects...", key="search_approve_filter")
-            
-            # Filter dataframe based on search
-            filtered_df = df.copy()
-            if search_approve:
-                search_lower = search_approve.lower()
-                mask = (
-                    df.get('Name', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
-                    df.get('Email', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False) |
-                    df.get('Organization', pd.Series(dtype='str')).str.lower().str.contains(search_lower, na=False)
-                )
-                filtered_df = df[mask]
-            
-            st.markdown(f"**Showing {len(filtered_df)} of {len(df)} prospects**")
-            
-            # Button row (without Select All)
-            col1, col2, col3 = st.columns([2, 2, 2])
-            
+            # Select All checkbox
+            col1, col2 = st.columns([1, 5])
             with col1:
-                if st.button("🔄 Refresh Data", width="stretch", key="refresh_top"):
-                    st.cache_data.clear()
-                    if 'selected_prospects' in st.session_state:
-                        st.session_state.selected_prospects = set()
-                    st.rerun()
+                select_all = st.checkbox("Select All", key="select_all_cora")
+            with col2:
+                st.markdown("*Check the box to select all leads at once*")
             
+            # TOP APPROVE BUTTON
+            col1, col2, col3 = st.columns([2, 2, 2])
+            with col1:
+                if st.button("🔄 Refresh Data", use_container_width=True, key="refresh_top"):
+                    st.cache_data.clear()
+                    st.rerun()
             with col2:
                 approve_btn_top = st.button(
-                    "✅ Approve Selected Prospects",
+                    "✅ Approve Selected Leads",
                     type="primary",
-                    width="stretch",
+                    use_container_width=True,
                     key="approve_top"
                 )
             
-            with col3:
-                # CSV Download button
-                if len(filtered_df) > 0:
-                    csv = filtered_df.to_csv(index=False)
-                    st.download_button(
-                        "📥 Download CSV",
-                        csv,
-                        f"prospects_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        "text/csv",
-                        width="stretch"
-                    )
-            
             st.markdown("---")
             
-            # Initialize session state for selections
-            if 'selected_prospects' not in st.session_state:
-                st.session_state.selected_prospects = set()
-            
             # Display leads with checkboxes in container with fixed height
-            selected_donor_ids = []
+            selected_lead_ids = []
             
-            # Create scrollable container
+            # Create scrollable container using st.container with height parameter
             leads_container = st.container(height=500)
             
             with leads_container:
-                # HEADER ROW with Select All checkbox
-                col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
-                
-                with col1:
-                    # Get all donor IDs from filtered dataframe
-                    all_donor_ids = set()
-                    for _, row in filtered_df.iterrows():
-                        donor_id = row.get('Donor ID') or row.get('Lead ID', '')
-                        if donor_id:
-                            all_donor_ids.add(donor_id)
-                    
-                    # Check if all visible prospects are selected
-                    all_selected = all_donor_ids.issubset(st.session_state.selected_prospects) if all_donor_ids else False
-                    
-                    # Select All checkbox
-                    select_all = st.checkbox(
-                        "Select All",
-                        value=all_selected,
-                        key="select_all_checkbox"
-                    )
-                    
-                    # Handle Select All toggle
-                    if select_all and not all_selected:
-                        # User just checked Select All - add all visible prospects
-                        st.session_state.selected_prospects.update(all_donor_ids)
-                        st.rerun()
-                    elif not select_all and all_selected:
-                        # User just unchecked Select All - remove all visible prospects
-                        st.session_state.selected_prospects -= all_donor_ids
-                        st.rerun()
-                
-                with col2:
-                    st.markdown("**Name**")
-                
-                with col3:
-                    st.markdown("**Organization**")
-                
-                with col4:
-                    st.markdown("**Email**")
-                
-                with col5:
-                    st.markdown("**Donor ID**")
-                
-                # Separator line
-                st.markdown("---")
-                
-                # DATA ROWS
-                for idx, row in filtered_df.iterrows():
-                    donor_id = row.get('Donor ID') or row.get('Lead ID', '')
-                    
+                for idx, row in df.iterrows():
                     col1, col2, col3, col4, col5 = st.columns([0.5, 2, 2.5, 2, 1.5])
                     
                     with col1:
-                        # Check if this prospect is in the selected set
-                        is_checked = donor_id in st.session_state.selected_prospects if donor_id else False
-                        
-                        checkbox_changed = st.checkbox(
+                        is_selected = st.checkbox(
                             "✓",
-                            value=is_checked,
-                            key=f"prospect_check_{donor_id}_{idx}",
+                            value=select_all,
+                            key=f"lead_check_{idx}",
                             label_visibility="collapsed"
                         )
-                        
-                        # Update session state based on checkbox
-                        if checkbox_changed and not is_checked:
-                            # User just checked this box
-                            if donor_id:
-                                st.session_state.selected_prospects.add(donor_id)
-                        elif not checkbox_changed and is_checked:
-                            # User just unchecked this box
-                            if donor_id:
-                                st.session_state.selected_prospects.discard(donor_id)
-                        
-                        # Add to current selection list
-                        if donor_id in st.session_state.selected_prospects:
-                            selected_donor_ids.append(donor_id)
+                        if is_selected:
+                            lead_id = row.get('Lead ID', '')
+                            if lead_id:
+                                selected_lead_ids.append(lead_id)
                     
                     with col2:
                         st.write(f"**{row.get('Name', 'N/A')}**")
@@ -438,7 +347,7 @@ elif st.session_state.selected_page == "Approve Leads":
                         st.write(email[:25] + '...' if len(str(email)) > 25 else email)
                     
                     with col5:
-                        st.code(row.get('Lead ID', 'N/A'), language=None)
+                        st.code(row.get('Donor ID') or row.get('Lead ID', 'N/A'), language=None)
             
             st.markdown("---")
             
@@ -446,42 +355,39 @@ elif st.session_state.selected_page == "Approve Leads":
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
-                st.metric("Selected", len(selected_donor_ids))
+                st.metric("Selected", len(selected_lead_ids))
             
             with col2:
                 approve_btn_bottom = st.button(
                     "✅ Approve Selected Leads",
                     type="primary",
-                    width="stretch",
-                    disabled=len(selected_donor_ids) == 0,
+                    use_container_width=True,
+                    disabled=len(selected_lead_ids) == 0,
                     key="approve_bottom"
                 )
             
             with col3:
-                if st.button("🔄 Refresh Data", width="stretch"):
+                if st.button("🔄 Refresh Data", use_container_width=True):
                     st.cache_data.clear()
                     st.rerun()
             
             # Handle approval from either button
             if approve_btn_top or approve_btn_bottom:
-                if selected_donor_ids:
-                    with st.spinner("Sending to DIANA..."):
-                        success, response = send_approved_leads_to_diana(selected_donor_ids)
+                if selected_lead_ids:
+                    with st.spinner("Sending to MARK..."):
+                        success, response = send_approved_leads_to_mark(selected_lead_ids)
                         
                         if success:
-                            st.success(f"✅ Successfully approved {len(selected_donor_ids)} prospect(s)!")
-                            st.info("🤖 DIANA will send outreach emails shortly.")
-                            
-                            # Clear selections after successful approval
-                            st.session_state.selected_prospects = set()
+                            st.success(f"✅ Successfully approved {len(selected_lead_ids)} lead(s)!")
+                            st.info("🤖 MARK will send outreach emails shortly.")
                             
                             # Show approved leads
                             with st.expander("View Approved Leads"):
-                                for donor_id in selected_donor_ids:
-                                    st.write(f"• {donor_id}")
+                                for lead_id in selected_lead_ids:
+                                    st.write(f"• {lead_id}")
                         else:
-                            st.error(f"❌ Failed to send to DIANA: {response}")
-                            st.info("💡 Check that the DIANA webhook is running in n8n")
+                            st.error(f"❌ Failed to send to MARK: {response}")
+                            st.info("💡 Check that the MARK webhook is running in n8n")
                 else:
                     st.warning("⚠️ Please select at least one lead to approve")
         
@@ -507,16 +413,16 @@ elif st.session_state.selected_page == "Approve Leads":
         st.subheader(f"All Leads ({len(filtered)})")
         
         if not filtered.empty:
-            st.dataframe(filtered, width="stretch", hide_index=True)
+            st.dataframe(filtered, use_container_width=True, hide_index=True)
             
             # Export button
             csv = filtered.to_csv(index=False)
             st.download_button(
                 "📥 Export to CSV",
                 csv,
-                f"daphne_leads_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                f"cora_leads_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 "text/csv",
-                width="content"
+                use_container_width=False
             )
         else:
             st.info("No leads match your search criteria.")
@@ -788,7 +694,7 @@ elif st.session_state.selected_page == "Manage Tasks":
                             key=f"update_notes_{selected_task_id}"
                         )
                         
-                        if st.button("💾 Update Task", type="primary", width="stretch", key=f"update_btn_{selected_task_id}"):
+                        if st.button("💾 Update Task", type="primary", use_container_width=True, key=f"update_btn_{selected_task_id}"):
                             update_data = {
                                 "taskId": selected_task_id,
                                 "taskType": task_row.get('Task Type', 'RFP Submission'),
@@ -845,7 +751,7 @@ elif st.session_state.selected_page == "Manage Tasks":
             )
             filtered_tasks = opsi_df[mask]
         
-        st.dataframe(filtered_tasks, hide_index=True, width="stretch")
+        st.dataframe(filtered_tasks, hide_index=True, use_container_width=True)
     else:
         st.info("No tasks found. Create your first task above.")
 
@@ -857,7 +763,7 @@ st.markdown(
     f"""
     <div style='text-align: center; color: #666; padding: 1rem;'>
         <p><strong>ApexxAdams Multi-Agent Command Center</strong></p>
-        <p>DAPHNE | DIANA | OPSI | Last updated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+        <p>CORA | MARK | OPSI | Last updated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
     </div>
     """,
     unsafe_allow_html=True
